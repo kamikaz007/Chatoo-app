@@ -174,22 +174,28 @@
         },
 
         async sendMsg() {
-            const input = document.getElementById('chat-input');
-            const val = input.value.trim();
-            if(!val || !this.state.room) return;
+    const input = document.getElementById('chat-input');
+    const val = input.value.trim();
+    
+    // التأكد من وجود اسم مستخدم، وإذا كان undefined نستخدم "Guest" مؤقتاً
+    const senderId = (this.state.id && this.state.id !== 'undefined') ? this.state.id : 'Pi_User_' + Math.floor(Math.random()*999);
 
-            try {
-                // إضافة الرسالة مع تحديد وقت السيرفر (مهم لـ Pi Browser)
-                await db.collection("messages").doc(this.state.room).collection("chats").add({
-                    u: this.state.id,
-                    val: val,
-                    t: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                input.value = "";
-                console.log("Sent successfully in Pi!");
-            } catch (e) {
-                alert("خطأ في الإرسال داخل Pi: " + e.message);
-            }
+    if(!val || !this.state.room) return;
+
+    try {
+        await db.collection("messages").doc(this.state.room).collection("chats").add({
+            u: senderId, // استخدام المعرف البديل هنا يمنع الخطأ الظاهر في صورتك
+            val: val,
+            t: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = "";
+        console.log("تم الإرسال بنجاح داخل باي براوزر!");
+    } catch (e) {
+        console.error("خطأ تقني في Firebase:", e);
+        alert("تنبيه: تأكد من تفعيل الإنترنت داخل باي براوزر.");
+    }
+}
+
         },
 
         closeChat() { document.getElementById('modal-chat').classList.remove('active'); }
