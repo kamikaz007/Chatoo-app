@@ -85,34 +85,42 @@
     </div>
 <script>
     const chatoo = {
-        state: { id: 'User_' + Math.floor(Math.random()*999) },
+        state: { 
+            id: 'User_' + Math.floor(Math.random()*999),
+            room: null 
+        },
 
         async init() {
             this.initFirebase();
             
-            // إظهار زر الدخول فوراً لتجنب التعليق
-            document.getElementById('user-status').innerText = "نظام الدخول السريع جاهز";
+            // إظهار واجهة الدخول فوراً لتجنب تعليق Pi Browser
             document.getElementById('entry-btn').style.display = 'block';
 
-            // محاولة المصادقة في الخلفية دون تعطيل المستخدم
             try {
+                // تهيئة Pi SDK
                 await Pi.init({ version: "2.0", sandbox: false });
                 const user = await Pi.authenticate(['username'], (p) => {});
                 this.state.id = user.username;
                 document.getElementById('user-status').innerHTML = `متصل كـ: <span style="color:var(--gold)">${user.username}</span>`;
             } catch (e) {
-                console.log("العمل في وضع الزائر");
+                console.log("العمل في وضع الزائر داخل Pi Browser");
             }
         },
 
         initFirebase() {
+            // استخدام الإعدادات الخاصة بك مع إضافة خيار تجربة الاتصال المستمر
             const config = {
                 apiKey: "AIzaSyD9L74WN6V_4lOrIoaQPPtyi_SO-LLtayA",
                 authDomain: "chatoo-4566f.firebaseapp.com",
                 projectId: "chatoo-4566f",
                 appId: "1:724118831864:web:2cca10fa8d290d4288f10d"
             };
-            if (!firebase.apps.length) firebase.initializeApp(config);
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(config);
+                // تفعيل التخزين المحلي لضمان عمل الرسائل حتى مع ضعف الشبكة في Pi Browser
+                firebase.firestore().enablePersistence().catch(() => {});
+            }
             window.db = firebase.firestore();
         },
 
@@ -123,7 +131,6 @@
         },
 
         setupMap() {
-            // كود الخريطة كما هو في النسخة السابقة
             navigator.geolocation.getCurrentPosition(pos => {
                 const { latitude, longitude } = pos.coords;
                 const map = L.map('map-canvas', { zoomControl: false, attributionControl: false }).setView([latitude, longitude], 16);
@@ -136,7 +143,7 @@
                             if(p.tags.name) L.marker([p.lat, p.lon]).addTo(map).on('click', () => this.openChat(p.tags.name));
                         });
                     });
-            });
+            }, () => alert("يرجى تفعيل الموقع في Pi Browser"));
         },
 
         openChat(name) {
@@ -147,8 +154,10 @@
         },
 
         listen() {
-            db.collection("messages").doc(this.state.room).collection("chats").orderBy("t", "asc")
-                .onSnapshot(snap => {
+            // الاستماع للرسائل بتوافق عالي مع Pi Browser
+            db.collection("messages").doc(this.state.room).collection("chats")
+                .orderBy("t", "asc")
+                .onSnapshot((snap) => {
                     const flow = document.getElementById('chat-flow');
                     flow.innerHTML = "";
                     snap.forEach(doc => {
@@ -159,16 +168,28 @@
                         flow.appendChild(div);
                     });
                     flow.scrollTop = flow.scrollHeight;
+                }, (error) => {
+                    console.error("Firebase Error in Pi:", error);
                 });
         },
 
         async sendMsg() {
             const input = document.getElementById('chat-input');
-            if(!input.value.trim()) return;
-            await db.collection("messages").doc(this.state.room).collection("chats").add({
-                u: this.state.id, val: input.value, t: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            input.value = "";
+            const val = input.value.trim();
+            if(!val || !this.state.room) return;
+
+            try {
+                // إضافة الرسالة مع تحديد وقت السيرفر (مهم لـ Pi Browser)
+                await db.collection("messages").doc(this.state.room).collection("chats").add({
+                    u: this.state.id,
+                    val: val,
+                    t: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                input.value = "";
+                console.log("Sent successfully in Pi!");
+            } catch (e) {
+                alert("خطأ في الإرسال داخل Pi: " + e.message);
+            }
         },
 
         closeChat() { document.getElementById('modal-chat').classList.remove('active'); }
