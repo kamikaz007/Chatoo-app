@@ -3,111 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chatoo Ultra Pro | Web3 Edition</title>
+    <title>Chatoo Pro | Cinematic Map & Chat</title>
 
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="rpc.js"></script>
 
     <style>
         :root {
-            --primary: #8257e5; --gold: #ffd700; --dark: #09090b; --surface: #121214;
+            --primary: #8257e5; --gold: #ffd700; --dark: #09090b;
             --glass: rgba(255, 255, 255, 0.05); --rpc-online: #00ff88;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--dark); color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--dark); color: #fff; font-family: sans-serif; overflow: hidden; }
 
-        /* --- واجهة القفل (Cinematic Overlay) --- */
+        /* شاشة القفل - المرحلة 10 */
         #lock-screen {
             position: fixed; inset: 0; z-index: 9999; background: radial-gradient(circle at center, #1a1a2e 0%, #09090b 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
-        .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); max-width: 380px; width: 100%; }
+        .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 90%; max-width: 380px; }
+        
+        .btn-pay {
+            background: linear-gradient(45deg, var(--primary), #a855f7);
+            color: white; border: none; padding: 18px; border-radius: 15px;
+            font-weight: bold; width: 100%; cursor: pointer; margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(130, 87, 229, 0.3);
+        }
 
-        /* --- التطبيق الرئيسي --- */
+        /* واجهة التطبيق الرئيسية */
         .app-shell { display: none; flex-direction: column; height: 100vh; position: relative; }
-        #map-canvas { flex-grow: 1; z-index: 10; width: 100%; height: 100%; filter: grayscale(0.4) contrast(1.1) brightness(0.6); }
+        #map-canvas { flex-grow: 1; z-index: 10; width: 100%; height: 100%; filter: grayscale(0.5) brightness(0.6); }
 
         header { position: absolute; top: 0; width: 100%; padding: 25px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .xp-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--gold); box-shadow: 0 0 20px var(--gold); z-index: 9999; transition: width 1s; }
-        
-        .status-pill { background: var(--glass); backdrop-filter: blur(25px); padding: 10px 18px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-        
-        .radar-scroller { position: absolute; bottom: 120px; left: 0; width: 100%; display: flex; gap: 15px; padding: 0 20px; overflow-x: auto; z-index: 500; }
-        .venue-node { background: rgba(18, 18, 20, 0.85); min-width: 240px; padding: 20px; border-radius: 28px; border: 1px solid var(--primary); }
+        .rpc-dot { width: 10px; height: 10px; border-radius: 50%; background: #444; }
+        .rpc-active { background: var(--rpc-online); box-shadow: 0 0 15px var(--rpc-online); }
 
+        /* نافذة الدردشة السينمائية */
         .view-modal { position: fixed; inset: 0; background: var(--dark); z-index: 5000; display: none; flex-direction: column; }
         .view-modal.active { display: flex; }
-
-        .chat-stream { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; font-size: 15px; }
-        .msg.me { align-self: flex-end; background: var(--primary); }
-        .msg.them { align-self: flex-start; background: var(--surface); }
+        .chat-stream { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 12px 16px; border-radius: 18px; max-width: 80%; font-size: 14px; }
+        .msg.me { align-self: flex-end; background: var(--primary); border-bottom-right-radius: 4px; }
+        .msg.them { align-self: flex-start; background: #222; border-bottom-left-radius: 4px; }
 
         nav { background: #050505; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid var(--glass); z-index: 2000; }
-        .nav-btn { font-size: 24px; opacity: 0.4; cursor: pointer; transition: 0.3s; }
-        .nav-btn.active { opacity: 1; color: var(--gold); transform: translateY(-5px); }
     </style>
 </head>
 <body>
 
     <div id="lock-screen">
         <div class="card">
-            <h1 style="letter-spacing: 4px;">CHATOO <span style="color:var(--primary)">PRO</span></h1>
-            <p style="color: #888; font-size: 14px; margin-bottom: 30px;">قم بتفعيل وصول Web3 عبر شبكة Pi لاستخدام الخريطة والدردشة.</p>
-            <div id="auth-status" style="margin-bottom: 20px; font-size: 14px;">جاري التحقق من Pi Browser...</div>
-            <button id="pay-btn" onclick="chatoo.piPay(1.0, 'تفعيل حساب Pro')" style="background:var(--primary); color:#fff; border:none; padding:18px; border-radius:15px; width:100%; font-weight:bold; cursor:pointer; display:none;">تفعيل الحساب (1 Pi)</button>
+            <span style="color:var(--gold); font-size: 12px; letter-spacing: 2px;">WEB3 SECURE GATEWAY</span>
+            <h1 style="margin: 10px 0;">CHATOO <span style="color:var(--primary)">PRO</span></h1>
+            <div id="user-status" style="margin: 20px 0; color: #888;">جاري فحص اتصال Pi Browser...</div>
+            <button id="pay-btn" class="btn-pay" onclick="chatoo.piPay(1.0, 'تفعيل الحساب')" style="display:none;">تفعيل الحساب (1 Pi)</button>
         </div>
     </div>
 
-    <div id="xp-indicator" class="xp-bar"></div>
     <div class="app-shell" id="main-app">
         <header>
-            <div class="status-pill"><span id="rank-label">VOYAGER</span></div>
-            <div style="font-weight:900; font-size:22px; letter-spacing:4px;">CHATOO</div>
-            <div class="status-pill" style="color:var(--gold)">✨ <span id="user-pts-display">0</span></div>
+            <div id="rpc-dot" class="rpc-dot"></div>
+            <div style="font-weight:900; letter-spacing:4px;">CHATOO</div>
+            <div style="color:var(--gold)">✨ <span id="xp-val">0</span></div>
         </header>
-
         <div id="map-canvas"></div>
-        <div class="radar-scroller" id="radar-list"></div>
-
         <nav>
-            <div class="nav-btn active" onclick="chatoo.route('map')">📍</div>
-            <div class="nav-btn" onclick="chatoo.route('shop')">🎁</div>
-            <div class="nav-btn" onclick="chatoo.route('profile')">👤</div>
+            <div style="font-size:24px;">📍</div>
+            <div style="font-size:24px; opacity:0.3;">🎁</div>
+            <div style="font-size:24px; opacity:0.3;">👤</div>
         </nav>
     </div>
 
     <div id="modal-chat" class="view-modal">
         <div style="background:var(--primary); padding:20px; display:flex; justify-content:space-between; align-items:center;">
-            <div onclick="chatoo.closeChat()" style="font-size:24px">✕</div>
-            <b id="chat-venue-name">Venue</b>
-            <div style="width:24px"></div>
+            <div onclick="chatoo.closeChat()" style="font-size:22px; cursor:pointer;">✕</div>
+            <b id="venue-name">المقهى</b>
+            <div style="width:22px;"></div>
         </div>
         <div class="chat-stream" id="chat-flow"></div>
-        <div style="padding: 15px; background: #0c0c0e; display: flex; gap: 10px; border-top: 1px solid var(--glass);">
-            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="flex-grow:1; background:#1a1a1d; border:none; padding:15px; border-radius:25px; color:#fff;">
-            <button onclick="chatoo.sendMsg()" style="background:var(--gold); border:none; width:50px; height:50px; border-radius:50%;">➔</button>
+        <div style="padding:15px; background:#0c0c0e; display:flex; gap:10px;">
+            <input type="text" id="chat-input" placeholder="اكتب رسالتك..." style="flex-grow:1; background:#1a1a1d; border:none; padding:15px; border-radius:25px; color:#fff;">
+            <button onclick="chatoo.sendMsg()" style="background:var(--gold); border:none; width:50px; height:50px; border-radius:50%; cursor:pointer;">➔</button>
         </div>
     </div>
 
     <script>
         const chatoo = {
-            state: {
-                id: null,
-                xp: parseInt(localStorage.getItem('chatoo_xp')) || 0,
-                piReady: false,
-                isVerified: localStorage.getItem('chatoo_verified') === 'true'
-            },
+            state: { id: null, xp: 0, isVerified: localStorage.getItem('chatoo_verified') === 'true' },
 
             async init() {
                 this.initFirebase();
-                this.initPi();
+                if (window.RPC) await window.RPC.checkStatus();
+                await this.initPi();
                 if (this.state.isVerified) this.unlockApp();
             },
 
@@ -116,7 +108,6 @@
                     apiKey: "AIzaSyD9L74WN6V_4lOrIoaQPPtyi_SO-LLtayA",
                     authDomain: "chatoo-4566f.firebaseapp.com",
                     projectId: "chatoo-4566f",
-                    storageBucket: "chatoo-4566f.firebasestorage.app",
                     appId: "1:724118831864:web:2cca10fa8d290d4288f10d"
                 };
                 if (!firebase.apps.length) firebase.initializeApp(config);
@@ -126,96 +117,78 @@
             async initPi() {
                 try {
                     await Pi.init({ version: "2.0", sandbox: true });
-                    const user = await Pi.authenticate(['username', 'payments'], (p) => {});
+                    const user = await Pi.authenticate(['username', 'payments'], (p)=>{});
                     this.state.id = user.username;
-                    this.state.piReady = true;
-                    document.getElementById('auth-status').innerText = `مرحباً ${user.username}`;
-                    document.getElementById('pay-btn').style.display = 'block';
+                    document.getElementById('user-status').innerHTML = `مرحباً <span style="color:var(--gold)">${user.username}</span>`;
+                    document.getElementById('pay-btn').style.display = 'block'; // تفعيل الزر فوراً
                 } catch (e) {
-                    document.getElementById('auth-status').innerHTML = '<span style="color:#ff4757">يجب فتح التطبيق داخل Pi Browser</span>';
+                    document.getElementById('user-status').innerText = "افتح التطبيق من Pi Browser";
                 }
             },
 
             async piPay(amt, label) {
                 try {
-                    const payment = await Pi.createPayment({
-                        amount: amt,
-                        memo: label,
-                        metadata: { uid: this.state.id }
-                    }, {
-                        onReadyForServerApproval: async (pId) => {
-                            return await fetch('/.netlify/functions/payment', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ paymentId: pId, action: 'approve' })
-                            });
-                        },
-                        onReadyForServerCompletion: async (pId, txid) => {
-                            await fetch('/.netlify/functions/payment', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ paymentId: pId, txid: txid, action: 'complete' })
-                            });
+                    await Pi.createPayment({ amount: amt, memo: label, metadata: {uid: this.state.id} }, {
+                        onReadyForServerApproval: (pId) => fetch('/.netlify/functions/payment', {
+                            method: 'POST', body: JSON.stringify({ paymentId: pId, action: 'approve' })
+                        }),
+                        onReadyForServerCompletion: (pId, txid) => {
                             this.state.isVerified = true;
                             localStorage.setItem('chatoo_verified', 'true');
-                            Swal.fire("تم التفعيل!", "استمتع بميزات Ultra Pro", "success");
                             this.unlockApp();
                         }
                     });
-                } catch (e) { Swal.fire("خطأ", "فشلت عملية الدفع", "error"); }
+                } catch (e) { Swal.fire("تنبيه", "تأكد من رصيد محفظتك (Test-Pi)", "warning"); }
             },
 
             unlockApp() {
                 document.getElementById('lock-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'flex';
                 this.setupMap();
-                this.updateXPUI();
             },
 
             setupMap() {
-                navigator.geolocation.getCurrentPosition(p => {
-                    const { latitude, longitude } = p.coords;
-                    this.state.map = L.map('map-canvas', { zoomControl: false, attributionControl: false }).setView([latitude, longitude], 15);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.state.map);
-                    L.circleMarker([latitude, longitude], { radius: 10, color: '#8257e5' }).addTo(this.state.map);
-                    this.fetchPlaces(latitude, longitude);
-                });
-            },
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    const map = L.map('map-canvas', { zoomControl: false, attributionControl: false }).setView([latitude, longitude], 16);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                    
+                    // أيقونة مخصصة للمقاهي
+                    const cafeIcon = L.divIcon({ html: '☕', className: 'cafe-icon', iconSize: [30, 30] });
 
-            async fetchPlaces(lat, lon) {
-                const query = `[out:json];node["amenity"~"cafe|restaurant"](around:2000,${lat},${lon});out;`;
-                const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
-                const data = await resp.json();
-                const list = document.getElementById('radar-list');
-                data.elements.forEach(v => {
-                    if(!v.tags.name) return;
-                    L.marker([v.lat, v.lon]).addTo(this.state.map).on('click', () => this.openChat(v.tags.name));
-                    const el = document.createElement('div');
-                    el.className = 'venue-node';
-                    el.innerHTML = `<b>${v.tags.name}</b><br><small style="color:var(--gold)">📍 متصل الآن</small>`;
-                    el.onclick = () => this.openChat(v.tags.name);
-                    list.appendChild(el);
+                    // جلب المقاهي القريبة
+                    const query = `[out:json];node["amenity"~"cafe|restaurant"](around:1500,${latitude},${longitude});out;`;
+                    fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+                        .then(r => r.json())
+                        .then(data => {
+                            data.elements.forEach(place => {
+                                if(place.tags.name) {
+                                    L.marker([place.lat, place.lon], {icon: cafeIcon}).addTo(map)
+                                        .on('click', () => this.openChat(place.tags.name));
+                                }
+                            });
+                        });
                 });
             },
 
             openChat(name) {
                 this.state.room = name.replace(/\s+/g, '_');
-                document.getElementById('chat-venue-name').innerText = name;
+                document.getElementById('venue-name').innerText = name;
                 document.getElementById('modal-chat').classList.add('active');
-                this.listenToMessages();
+                this.loadMessages();
             },
 
-            listenToMessages() {
-                db.collection("rooms_v2").doc(this.state.room).collection("m").orderBy("t", "asc").limitToLast(50)
+            loadMessages() {
+                db.collection("rooms_v2").doc(this.state.room).collection("m").orderBy("t", "asc").limitToLast(30)
                     .onSnapshot(snap => {
                         const flow = document.getElementById('chat-flow');
                         flow.innerHTML = "";
                         snap.forEach(doc => {
                             const m = doc.data();
-                            const div = document.createElement('div');
-                            div.className = `msg ${m.u === this.state.id ? 'me' : 'them'}`;
-                            div.innerText = m.val;
-                            flow.appendChild(div);
+                            const d = document.createElement('div');
+                            d.className = `msg ${m.u === this.state.id ? 'me' : 'them'}`;
+                            d.innerText = m.val;
+                            flow.appendChild(d);
                         });
                         flow.scrollTop = flow.scrollHeight;
                     });
@@ -228,26 +201,9 @@
                     u: this.state.id, val: input.value, t: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 input.value = "";
-                this.gainXP(2);
             },
 
-            gainXP(n) { 
-                this.state.xp += n; 
-                localStorage.setItem('chatoo_xp', this.state.xp); 
-                this.updateXPUI(); 
-            },
-
-            updateXPUI() {
-                document.getElementById('user-pts-display').innerText = this.state.xp;
-                document.getElementById('xp-indicator').style.width = (this.state.xp % 100) + "%";
-            },
-
-            closeChat() { document.getElementById('modal-chat').classList.remove('active'); },
-
-            route(view) {
-                // منطق التنقل بين المودالات (Shop/Profile)
-                Swal.fire("قريباً", "هذه الميزة قيد التطوير", "info");
-            }
+            closeChat() { document.getElementById('modal-chat').classList.remove('active'); }
         };
 
         window.onload = () => chatoo.init();
