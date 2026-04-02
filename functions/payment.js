@@ -1,21 +1,45 @@
-const axios = require("axios");
+const axios = require('axios');
 
-// مفتاحك السري من Pi Developer Portal
-const PI_API_KEY = "nkvn0ztk0cw5hjavtmdkrigmductrkt88hkluyjifz3zw5uob0fn2ei12tbyzcbh"; 
+exports.handler = async (event, context) => {
+    // السماح بطلبات CORS
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }, body: '' };
+    }
 
-exports.handler = async (event) => {
-    if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
     try {
         const { paymentId, txid, action } = JSON.parse(event.body);
-        let endpoint = `https://api.minepi.com/v2/payments/${paymentId}/${action}`;
-        let data = action === "complete" ? { txid } : {};
+        const apiKey = "nkvn0ztk0cw5hjavtmdkr1gmductrkt88hk1uyjifz3zw5uob0fn2e1i2tbyzcbh"; // استبدله بمفتاحك من Pi Dashboard
 
-        await axios.post(endpoint, data, {
-            headers: { 'Authorization': `Key ${PI_API_KEY}` }
-        });
-        return { statusCode: 200, body: JSON.stringify({ status: "success" }) };
-    } catch (e) {
-        return { statusCode: 500, body: e.message };
+        // 1. مرحلة الموافقة على الدفع (Approve)
+        if (action === 'approve') {
+            await axios.post(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {}, {
+                headers: { 'Authorization': `Key ${apiKey}` }
+            });
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ message: "Approved" })
+            };
+        }
+
+        // 2. مرحلة إكمال الدفع (Complete)
+        if (action === 'complete') {
+            await axios.post(`https://api.minepi.com/v2/payments/${paymentId}/complete`, { txid }, {
+                headers: { 'Authorization': `Key ${apiKey}` }
+            });
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ message: "Completed" })
+            };
+        }
+
+        return { statusCode: 400, body: JSON.stringify({ error: "Invalid Action" }) };
+
+    } catch (error) {
+        console.error("Pi API Error:", error.response ? error.response.data : error.message);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: "Internal Server Error" })
+        };
     }
 };
 
