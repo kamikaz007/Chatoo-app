@@ -2,42 +2,29 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Chatoo Ultra Pro | Web3</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatoo Pro - Web3</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <style>
         :root {
-            --primary: #8257e5;
-            --gold: #ffd700;
-            --dark: #09090b;
+            --primary: #8a2be2;
+            --gold: #ffb800;
             --glass: rgba(255, 255, 255, 0.05);
         }
-
         body {
             margin: 0;
-            background: var(--dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: white;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* واجهة سينمائية مظلمة */
-        .main-container {
-            flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            height: 100vh;
             background: radial-gradient(circle at center, #1a1a2e 0%, #09090b 100%);
             padding: 20px;
+            overflow: hidden;
         }
-
         .card {
             background: var(--glass);
             padding: 40px;
@@ -48,145 +35,115 @@
             max-width: 380px;
             text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            animation: fadeIn 1s ease-out;
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .btn-pay {
-            background: linear-gradient(45deg, var(--primary), #a855f7);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 25px;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 20px rgba(130, 87, 229, 0.3);
-        }
-
-        .btn-pay:active { transform: scale(0.96); }
-
         .status-badge {
             font-size: 11px;
             color: var(--gold);
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             margin-bottom: 15px;
             display: block;
         }
-
-        /* شريط XP السينمائي المحفوظ */
-        .xp-bar {
+        h1 { margin: 0; font-size: 28px; letter-spacing: 1px; }
+        .btn-pay {
+            background: linear-gradient(45deg, var(--primary), #4b55f7);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 15px;
             width: 100%;
-            height: 4px;
-            background: #111;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(138, 43, 226, 0.3);
         }
-        .xp-progress {
-            height: 100%;
-            background: var(--gold);
-            width: 0%;
-            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 15px var(--gold);
-        }
+        .btn-pay:active { transform: scale(0.96); }
+        #user-status { margin-top: 15px; font-size: 14px; color: #ccc; }
+        .sp-bar { width: 100%; height: 4px; background: #111; position: fixed; top: 0; left: 0; z-index: 1000; }
+        #sp { width: 0%; height: 100%; background: var(--gold); transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
-
-<div class="xp-bar"><div class="xp-progress" id="xp"></div></div>
-
-<div class="main-container">
+    <div class="sp-bar"><div id="sp"></div></div>
+    
     <div class="card">
         <span class="status-badge">Web3 Secure Gateway</span>
-        <h1 style="margin: 0; font-size: 28px; letter-spacing: 1px;">CHATOO <span style="color: var(--primary);">PRO</span></h1>
-        <p style="color: #888; margin-top: 15px; font-size: 14px; line-height: 1.6;">قم بتفعيل حسابك عبر شبكة Pi للوصول إلى الخريطة التفاعلية وغرف الدردشة العامة.</p>
+        <h1>CHATOO <span style="color: var(--primary);">PRO</span></h1>
+        <p style="color: #888; font-size: 14px; line-height: 1.6;">قم بتفعيل حسابك عبر شبكة Pi للوصول إلى الخريطة التفاعلية وغرف الدردشة.</p>
         
-        <div id="user-status" style="margin: 25px 0; color: var(--gold); font-size: 16px; font-weight: 500;">
-            جاري استدعاء البيانات من Pi...
-        </div>
+        <div id="user-status">جاري الاتصال بـ Pi...</div>
 
         <button class="btn-pay" onclick="transferPi()">تفعيل الحساب (1 Pi)</button>
     </div>
-</div>
 
-<script>
-    const Pi = window.Pi;
-    
-    async function initApp() {
-        try {
-            // تهيئة Pi SDK
-            Pi.init({ version: "2.0", sandbox: false });
-            
-            const scopes = ['username', 'payments'];
-            const user = await Pi.authenticate(scopes, (payment) => {
-                console.log("Incomplete payment found:", payment);
-            });
-            
-            document.getElementById('user-status').innerText = `مرحباً، ${user.user.username}`;
-            document.getElementById('xp').style.width = "30%";
-        } catch (e) {
-            document.getElementById('user-status').innerHTML = `<span style="color:#ff4b4b;">يجب فتح التطبيق داخل Pi Browser</span>`;
-        }
-    }
+    <script>
+        const Pi = window.Pi;
 
-    async function transferPi() {
-        const paymentData = {
-            amount: 1.0,
-            memo: "تفعيل عضوية Chatoo Pro - Netlify",
-            metadata: { type: "activation" }
-        };
-
-        const callbacks = {
-            onReadyForServerApproval: async (paymentId) => {
-                // الربط مع دالة Netlify
-                return await fetch('/.netlify/functions/payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentId, action: "approve" })
-                });
-            },
-            onReadyForServerCompletion: async (paymentId, txid) => {
-                // إكمال العملية عبر Netlify
-                await fetch('/.netlify/functions/payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentId, txid, action: "complete" })
-                });
+        async function initApp() {
+            try {
+                // تفعيل Sandbox لتجربة الدفع على Testnet
+                await Pi.init({ version: "2.0", sandbox: true });
                 
-                document.getElementById('xp').style.width = "100%";
-                Swal.fire({
-                    title: 'تم التفعيل بنجاح!',
-                    text: 'أهلاً بك في النسخة الاحترافية من Chatoo.',
-                    icon: 'success',
-                    background: '#09090b',
-                    color: '#fff',
-                    confirmButtonColor: '#8257e5'
-                });
-            },
-            onCancel: (pId) => console.log("User cancelled payment"),
-            onError: (err, p) => Swal.fire('خطأ', 'فشلت عملية الدفع، حاول مجدداً', 'error')
-        };
+                const scopes = ['username', 'payments'];
+                const onIncompletePaymentFound = (payment) => { 
+                    console.log("Incomplete payment found", payment);
+                };
 
-        try {
-            await Pi.createPayment(paymentData, callbacks);
-        } catch (err) {
-            console.error("Payment Error:", err);
+                const user = await Pi.authenticate(scopes, onIncompletePaymentFound);
+                document.getElementById('user-status').innerText = `مرحباً، ${user.username}`;
+                document.getElementById('sp').style.width = '100%';
+            } catch (err) {
+                document.getElementById('user-status').innerHTML = '<span style="color:#ff4b4b;">يجب فتح التطبيق داخل Pi Browser</span>';
+            }
         }
-    }
 
-    window.onload = initApp;
-</script>
+        async function transferPi() {
+            const paymentData = {
+                amount: 1.0,
+                memo: "تفعيل حساب Chatoo Pro - Netlify",
+                metadata: { type: "activation" }
+            };
 
+            const callbacks = {
+                onReadyForServerApproval: async (paymentId) => {
+                    // الربط مع دالة Netlify
+                    return await fetch('/.netlify/functions/payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId, action: 'approve' })
+                    });
+                },
+                onReadyForServerCompletion: async (paymentId, txid) => {
+                    await fetch('/.netlify/functions/payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId, txid, action: 'complete' })
+                    });
+                    
+                    Swal.fire({
+                        title: 'تم التفعيل!',
+                        text: 'مرحباً بك في Chatoo Pro',
+                        icon: 'success',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#8a2be2'
+                    });
+                },
+                onCancel: (paymentId) => console.log("User cancelled"),
+                onError: (error, payment) => Swal.fire('خطأ', 'فشلت عملية الدفع', 'error')
+            };
+
+            try {
+                await Pi.createPayment(paymentData, callbacks);
+            } catch (err) {
+                console.error("Payment Error:", err);
+            }
+        }
+
+        window.onload = initApp;
+    </script>
 </body>
 </html>
 
