@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chatoo Ultra Pro | المرحلة النهائية</title>
+    <title>Chatoo Ultra Pro</title>
 
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -11,32 +11,27 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="rpc.js"></script>
 
     <style>
-        :root {
-            --primary: #8257e5; --gold: #ffd700; --dark: #09090b;
-            --glass: rgba(255, 255, 255, 0.05); --rpc-online: #00ff88;
-        }
+        :root { --primary: #8257e5; --gold: #ffd700; --dark: #09090b; --glass: rgba(255, 255, 255, 0.05); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--dark); color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--dark); color: #fff; font-family: sans-serif; overflow: hidden; }
 
-        /* واجهة القفل السينمائية */
+        /* واجهة القفل */
         #lock-screen {
             position: fixed; inset: 0; z-index: 9999; background: radial-gradient(circle at center, #1a1a2e 0%, #09090b 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
         }
         .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 90%; max-width: 380px; }
+        
+        .entry-btn { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; display: none; margin-top: 15px; }
 
         /* التطبيق الرئيسي */
         .app-shell { display: none; flex-direction: column; height: 100vh; position: relative; }
         #map-canvas { flex-grow: 1; z-index: 10; width: 100%; height: 100%; filter: grayscale(0.5) brightness(0.6); }
 
         header { position: absolute; top: 0; width: 100%; padding: 25px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .rpc-dot { width: 10px; height: 10px; border-radius: 50%; background: #444; }
-        .rpc-active { background: var(--rpc-online); box-shadow: 0 0 15px var(--rpc-online); }
-
-        /* نافذة الدردشة */
+        
         .view-modal { position: fixed; inset: 0; background: var(--dark); z-index: 5000; display: none; flex-direction: column; }
         .view-modal.active { display: flex; }
         .chat-stream { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -45,7 +40,6 @@
         .msg.them { align-self: flex-start; background: #222; }
 
         nav { background: #050505; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid var(--glass); z-index: 2000; }
-        .btn-pay { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
@@ -53,16 +47,17 @@
     <div id="lock-screen">
         <div class="card">
             <h1 style="letter-spacing: 4px;">CHATOO <span style="color:var(--primary)">PRO</span></h1>
-            <div id="user-status" style="margin: 20px 0; color: #888; font-size: 14px;">جاري المصادقة...</div>
-            <button id="pay-btn" class="btn-pay" onclick="chatoo.piPay(1.0, 'تفعيل Pro')">تفعيل الوصول (1 Pi)</button>
+            <div id="user-status" style="margin: 20px 0; color: #888;">جاري فحص الاتصال...</div>
+            <button id="entry-btn" class="entry-btn" onclick="chatoo.unlockApp()">دخول التطبيق</button>
+            <button id="pay-btn" class="entry-btn" style="background:var(--gold); color:#000;" onclick="chatoo.piPay(1.0, 'تفعيل Pro')">تفعيل (1 Pi)</button>
         </div>
     </div>
 
     <div class="app-shell" id="main-app">
         <header>
-            <div id="rpc-dot" class="rpc-dot"></div>
+            <div style="width:10px; height:10px; border-radius:50%; background:#00ff88;"></div>
             <div style="font-weight:900; letter-spacing:4px;">CHATOO</div>
-            <div style="color:var(--gold)">✨ <span id="xp-display">0</span></div>
+            <div style="color:var(--gold)">✨ <span id="xp-val">0</span></div>
         </header>
         <div id="map-canvas"></div>
         <nav>
@@ -87,11 +82,17 @@
 
     <script>
         const chatoo = {
-            state: { id: null, xp: parseInt(localStorage.getItem('chatoo_xp')) || 0, isVerified: localStorage.getItem('chatoo_verified') === 'true' },
+            state: { id: 'User', xp: parseInt(localStorage.getItem('chatoo_xp')) || 0, isVerified: localStorage.getItem('chatoo_verified') === 'true' },
 
             async init() {
                 this.initFirebase();
-                if (window.RPC) await window.RPC.checkStatus();
+                // محاولة الاتصال بـ Pi بحد أقصى للوقت
+                setTimeout(() => {
+                    if (!this.state.piReady) {
+                        document.getElementById('user-status').innerText = "جاهز للدخول";
+                        document.getElementById('entry-btn').style.display = 'block';
+                    }
+                }, 4000);
                 await this.initPi();
             },
 
@@ -109,21 +110,19 @@
             async initPi() {
                 try {
                     await Pi.init({ version: "2.0", sandbox: true });
+                    this.state.piReady = true;
                     const user = await Pi.authenticate(['username', 'payments'], (p) => {});
+                    this.state.id = user.username;
+                    document.getElementById('user-status').innerHTML = `مرحباً <span style="color:var(--gold)">${user.username}</span>`;
                     
-                    if (user && user.username) {
-                        this.state.id = user.username;
-                        document.getElementById('user-status').innerHTML = `مرحباً <span style="color:var(--gold)">${user.username}</span>`;
-                        
-                        // دخول تلقائي إذا كان مفعل سابقاً
-                        if (this.state.isVerified) {
-                            this.unlockApp();
-                        } else {
-                            document.getElementById('pay-btn').style.display = 'block';
-                        }
+                    if (this.state.isVerified) {
+                        this.unlockApp();
+                    } else {
+                        document.getElementById('pay-btn').style.display = 'block';
                     }
                 } catch (e) {
-                    document.getElementById('user-status').innerText = "افتح التطبيق من Pi Browser";
+                    document.getElementById('user-status').innerText = "دخول كضيف (خارج Pi Browser)";
+                    document.getElementById('entry-btn').style.display = 'block';
                 }
             },
 
@@ -137,13 +136,13 @@
                             this.unlockApp();
                         }
                     });
-                } catch (e) { Swal.fire("تنبيه", "تأكد من رصيدك في Testnet", "warning"); }
+                } catch (e) { this.unlockApp(); } // تجاوز للأغراض التجريبية
             },
 
             unlockApp() {
                 document.getElementById('lock-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'flex';
-                document.getElementById('xp-display').innerText = this.state.xp;
+                document.getElementById('xp-val').innerText = this.state.xp;
                 this.setupMap();
             },
 
@@ -195,7 +194,7 @@
                 input.value = "";
                 this.state.xp += 5;
                 localStorage.setItem('chatoo_xp', this.state.xp);
-                document.getElementById('xp-display').innerText = this.state.xp;
+                document.getElementById('xp-val').innerText = this.state.xp;
             },
 
             closeChat() { document.getElementById('modal-chat').classList.remove('active'); }
