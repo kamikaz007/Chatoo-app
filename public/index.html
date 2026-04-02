@@ -8,82 +8,90 @@
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="rpc.js"></script>
 
     <style>
         :root {
             --primary: #8257e5; --gold: #ffd700; --dark: #09090b; --surface: #121214;
             --glass: rgba(255, 255, 255, 0.05); --rpc-online: #00ff88;
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100%; background: var(--dark); color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
 
-        /* قفل الدفع السينمائي */
+        /* --- واجهة القفل (Cinematic Overlay) --- */
         #lock-screen {
             position: fixed; inset: 0; z-index: 9999; background: radial-gradient(circle at center, #1a1a2e 0%, #09090b 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px;
         }
-        .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 90%; max-width: 380px; }
+        .card { background: var(--glass); padding: 40px; border-radius: 32px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); max-width: 380px; width: 100%; }
 
-        /* التطبيق الرئيسي */
+        /* --- التطبيق الرئيسي --- */
         .app-shell { display: none; flex-direction: column; height: 100vh; position: relative; }
-        #map-canvas { flex-grow: 1; z-index: 10; width: 100%; height: 100%; filter: grayscale(0.5) brightness(0.6); }
+        #map-canvas { flex-grow: 1; z-index: 10; width: 100%; height: 100%; filter: grayscale(0.4) contrast(1.1) brightness(0.6); }
 
         header { position: absolute; top: 0; width: 100%; padding: 25px 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .rpc-indicator { width: 10px; height: 10px; border-radius: 50%; background: #444; transition: 0.5s; }
-        .rpc-active { background: var(--rpc-online); box-shadow: 0 0 15px var(--rpc-online); }
-        .xp-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--gold); z-index: 9999; transition: width 1s; }
+        .xp-bar { position: fixed; top: 0; left: 0; height: 4px; background: var(--gold); box-shadow: 0 0 20px var(--gold); z-index: 9999; transition: width 1s; }
+        
+        .status-pill { background: var(--glass); backdrop-filter: blur(25px); padding: 10px 18px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        
+        .radar-scroller { position: absolute; bottom: 120px; left: 0; width: 100%; display: flex; gap: 15px; padding: 0 20px; overflow-x: auto; z-index: 500; }
+        .venue-node { background: rgba(18, 18, 20, 0.85); min-width: 240px; padding: 20px; border-radius: 28px; border: 1px solid var(--primary); }
 
-        nav { background: #050505; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid var(--glass); z-index: 2000; }
-        .nav-btn { font-size: 24px; opacity: 0.4; cursor: pointer; }
-        .nav-btn.active { opacity: 1; color: var(--gold); }
-
-        /* الشات */
         .view-modal { position: fixed; inset: 0; background: var(--dark); z-index: 5000; display: none; flex-direction: column; }
         .view-modal.active { display: flex; }
+
         .chat-stream { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; }
+        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; font-size: 15px; }
         .msg.me { align-self: flex-end; background: var(--primary); }
         .msg.them { align-self: flex-start; background: var(--surface); }
+
+        nav { background: #050505; display: flex; justify-content: space-around; padding: 20px; border-top: 1px solid var(--glass); z-index: 2000; }
+        .nav-btn { font-size: 24px; opacity: 0.4; cursor: pointer; transition: 0.3s; }
+        .nav-btn.active { opacity: 1; color: var(--gold); transform: translateY(-5px); }
     </style>
 </head>
 <body>
 
     <div id="lock-screen">
         <div class="card">
-            <h1>CHATOO <span style="color:var(--primary)">PRO</span></h1>
-            <p id="auth-status" style="margin: 20px 0; color: #888;">جاري التحقق من Pi Browser...</p>
-            <button id="pay-btn" onclick="chatoo.piPay(1.0, 'تفعيل Pro')" style="background:var(--primary); color:#fff; border:none; padding:18px; border-radius:15px; width:100%; font-weight:bold; display:none;">تفعيل الوصول (1 Pi)</button>
+            <h1 style="letter-spacing: 4px;">CHATOO <span style="color:var(--primary)">PRO</span></h1>
+            <p style="color: #888; font-size: 14px; margin-bottom: 30px;">قم بتفعيل وصول Web3 عبر شبكة Pi لاستخدام الخريطة والدردشة.</p>
+            <div id="auth-status" style="margin-bottom: 20px; font-size: 14px;">جاري التحقق من Pi Browser...</div>
+            <button id="pay-btn" onclick="chatoo.piPay(1.0, 'تفعيل حساب Pro')" style="background:var(--primary); color:#fff; border:none; padding:18px; border-radius:15px; width:100%; font-weight:bold; cursor:pointer; display:none;">تفعيل الحساب (1 Pi)</button>
         </div>
     </div>
 
     <div id="xp-indicator" class="xp-bar"></div>
     <div class="app-shell" id="main-app">
         <header>
-            <div id="rpc-dot" class="rpc-indicator"></div>
-            <div style="font-weight:900; letter-spacing:4px;">CHATOO</div>
-            <div style="color:var(--gold)">✨ <span id="user-pts-display">0</span></div>
+            <div class="status-pill"><span id="rank-label">VOYAGER</span></div>
+            <div style="font-weight:900; font-size:22px; letter-spacing:4px;">CHATOO</div>
+            <div class="status-pill" style="color:var(--gold)">✨ <span id="user-pts-display">0</span></div>
         </header>
+
         <div id="map-canvas"></div>
+        <div class="radar-scroller" id="radar-list"></div>
+
         <nav>
-            <div class="nav-btn active">📍</div>
-            <div class="nav-btn">🎁</div>
-            <div class="nav-btn">👤</div>
+            <div class="nav-btn active" onclick="chatoo.route('map')">📍</div>
+            <div class="nav-btn" onclick="chatoo.route('shop')">🎁</div>
+            <div class="nav-btn" onclick="chatoo.route('profile')">👤</div>
         </nav>
     </div>
 
     <div id="modal-chat" class="view-modal">
-        <div style="background:var(--primary); padding:20px; display:flex; justify-content:space-between;">
+        <div style="background:var(--primary); padding:20px; display:flex; justify-content:space-between; align-items:center;">
             <div onclick="chatoo.closeChat()" style="font-size:24px">✕</div>
-            <b id="chat-venue-name">الدردشة</b>
+            <b id="chat-venue-name">Venue</b>
             <div style="width:24px"></div>
         </div>
         <div class="chat-stream" id="chat-flow"></div>
-        <div style="padding:15px; background:#0c0c0e; display:flex; gap:10px;">
-            <input type="text" id="chat-input" placeholder="اكتب شيئاً..." style="flex-grow:1; background:#1a1a1d; border:none; padding:15px; border-radius:25px; color:#fff;">
+        <div style="padding: 15px; background: #0c0c0e; display: flex; gap: 10px; border-top: 1px solid var(--glass);">
+            <input type="text" id="chat-input" placeholder="اكتب رسالة..." style="flex-grow:1; background:#1a1a1d; border:none; padding:15px; border-radius:25px; color:#fff;">
             <button onclick="chatoo.sendMsg()" style="background:var(--gold); border:none; width:50px; height:50px; border-radius:50%;">➔</button>
         </div>
     </div>
@@ -93,12 +101,12 @@
             state: {
                 id: null,
                 xp: parseInt(localStorage.getItem('chatoo_xp')) || 0,
+                piReady: false,
                 isVerified: localStorage.getItem('chatoo_verified') === 'true'
             },
 
             async init() {
                 this.initFirebase();
-                if (window.RPC) await window.RPC.checkStatus();
                 this.initPi();
                 if (this.state.isVerified) this.unlockApp();
             },
@@ -108,6 +116,7 @@
                     apiKey: "AIzaSyD9L74WN6V_4lOrIoaQPPtyi_SO-LLtayA",
                     authDomain: "chatoo-4566f.firebaseapp.com",
                     projectId: "chatoo-4566f",
+                    storageBucket: "chatoo-4566f.firebasestorage.app",
                     appId: "1:724118831864:web:2cca10fa8d290d4288f10d"
                 };
                 if (!firebase.apps.length) firebase.initializeApp(config);
@@ -117,28 +126,43 @@
             async initPi() {
                 try {
                     await Pi.init({ version: "2.0", sandbox: true });
-                    const user = await Pi.authenticate(['username', 'payments'], (p)=>{});
+                    const user = await Pi.authenticate(['username', 'payments'], (p) => {});
                     this.state.id = user.username;
+                    this.state.piReady = true;
                     document.getElementById('auth-status').innerText = `مرحباً ${user.username}`;
                     document.getElementById('pay-btn').style.display = 'block';
                 } catch (e) {
-                    document.getElementById('auth-status').innerText = "افتح التطبيق من Pi Browser";
+                    document.getElementById('auth-status').innerHTML = '<span style="color:#ff4757">يجب فتح التطبيق داخل Pi Browser</span>';
                 }
             },
 
             async piPay(amt, label) {
                 try {
-                    await Pi.createPayment({ amount: amt, memo: label, metadata: {uid: this.state.id} }, {
-                        onReadyForServerApproval: (pId) => fetch('/.netlify/functions/payment', {
-                            method: 'POST', body: JSON.stringify({ paymentId: pId, action: 'approve' })
-                        }),
-                        onReadyForServerCompletion: (pId, txid) => {
+                    const payment = await Pi.createPayment({
+                        amount: amt,
+                        memo: label,
+                        metadata: { uid: this.state.id }
+                    }, {
+                        onReadyForServerApproval: async (pId) => {
+                            return await fetch('/.netlify/functions/payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ paymentId: pId, action: 'approve' })
+                            });
+                        },
+                        onReadyForServerCompletion: async (pId, txid) => {
+                            await fetch('/.netlify/functions/payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ paymentId: pId, txid: txid, action: 'complete' })
+                            });
                             this.state.isVerified = true;
                             localStorage.setItem('chatoo_verified', 'true');
+                            Swal.fire("تم التفعيل!", "استمتع بميزات Ultra Pro", "success");
                             this.unlockApp();
                         }
                     });
-                } catch (e) { Swal.fire("خطأ", "فشل الدفع", "error"); }
+                } catch (e) { Swal.fire("خطأ", "فشلت عملية الدفع", "error"); }
             },
 
             unlockApp() {
@@ -151,18 +175,26 @@
             setupMap() {
                 navigator.geolocation.getCurrentPosition(p => {
                     const { latitude, longitude } = p.coords;
-                    const map = L.map('map-canvas', { zoomControl: false }).setView([latitude, longitude], 15);
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                    this.fetchPlaces(latitude, longitude, map);
+                    this.state.map = L.map('map-canvas', { zoomControl: false, attributionControl: false }).setView([latitude, longitude], 15);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(this.state.map);
+                    L.circleMarker([latitude, longitude], { radius: 10, color: '#8257e5' }).addTo(this.state.map);
+                    this.fetchPlaces(latitude, longitude);
                 });
             },
 
-            async fetchPlaces(lat, lon, map) {
+            async fetchPlaces(lat, lon) {
                 const query = `[out:json];node["amenity"~"cafe|restaurant"](around:2000,${lat},${lon});out;`;
                 const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
                 const data = await resp.json();
+                const list = document.getElementById('radar-list');
                 data.elements.forEach(v => {
-                    if(v.tags.name) L.marker([v.lat, v.lon]).addTo(map).on('click', () => this.openChat(v.tags.name));
+                    if(!v.tags.name) return;
+                    L.marker([v.lat, v.lon]).addTo(this.state.map).on('click', () => this.openChat(v.tags.name));
+                    const el = document.createElement('div');
+                    el.className = 'venue-node';
+                    el.innerHTML = `<b>${v.tags.name}</b><br><small style="color:var(--gold)">📍 متصل الآن</small>`;
+                    el.onclick = () => this.openChat(v.tags.name);
+                    list.appendChild(el);
                 });
             },
 
@@ -170,10 +202,10 @@
                 this.state.room = name.replace(/\s+/g, '_');
                 document.getElementById('chat-venue-name').innerText = name;
                 document.getElementById('modal-chat').classList.add('active');
-                this.listenMessages();
+                this.listenToMessages();
             },
 
-            listenMessages() {
+            listenToMessages() {
                 db.collection("rooms_v2").doc(this.state.room).collection("m").orderBy("t", "asc").limitToLast(50)
                     .onSnapshot(snap => {
                         const flow = document.getElementById('chat-flow');
@@ -199,13 +231,25 @@
                 this.gainXP(2);
             },
 
-            gainXP(n) { this.state.xp += n; localStorage.setItem('chatoo_xp', this.state.xp); this.updateXPUI(); },
+            gainXP(n) { 
+                this.state.xp += n; 
+                localStorage.setItem('chatoo_xp', this.state.xp); 
+                this.updateXPUI(); 
+            },
+
             updateXPUI() {
                 document.getElementById('user-pts-display').innerText = this.state.xp;
                 document.getElementById('xp-indicator').style.width = (this.state.xp % 100) + "%";
             },
-            closeChat() { document.getElementById('modal-chat').classList.remove('active'); }
+
+            closeChat() { document.getElementById('modal-chat').classList.remove('active'); },
+
+            route(view) {
+                // منطق التنقل بين المودالات (Shop/Profile)
+                Swal.fire("قريباً", "هذه الميزة قيد التطوير", "info");
+            }
         };
+
         window.onload = () => chatoo.init();
     </script>
 </body>
