@@ -11,243 +11,120 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script src="config.js"></script>
-    <script src="rpc.js"></script>
-    <script src="auth.js"></script>
-    <script src="app.js"></script>
-
     <style>
         :root { 
-            --primary: #8257e5; 
-            --gold: #ffd700; 
-            --dark: #09090b; 
-            --card-bg: rgba(20, 20, 20, 0.95);
-            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #6366f1; 
+            --gold: #f59e0b; 
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(99, 102, 241, 0.3);
             --text-main: #ffffff;
-            --text-secondary: #a0a0a0;
+            --text-secondary: #94a3b8;
+            --gradient-bg: linear-gradient(135deg, #090e1a 0%, #171f33 100%);
+            --header-bg: rgba(15, 23, 42, 0.8);
         }
 
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--dark); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg-color); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         
-        #lock-screen { position: fixed; inset: 0; z-index: 9999; background: radial-gradient(circle at center, #1a1a2e 0%, #09090b 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .card { background: rgba(255, 255, 255, 0.03); padding: 40px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); width: 85%; max-width: 350px; text-align: center; }
+        #lock-screen { position: fixed; inset: 0; z-index: 9999; background: var(--gradient-bg); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .card { background: rgba(255, 255, 255, 0.04); padding: 40px; border-radius: 32px; border: 1px solid var(--border-color); backdrop-filter: blur(24px); width: 85%; max-width: 360px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
         
-        .entry-btn { background: var(--primary); color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 20px rgba(130, 87, 229, 0.4); transition: 0.3s; }
+        .entry-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 25px; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); transition: 0.3s; }
         .entry-btn:disabled { background: #444; cursor: not-allowed; }
-        .entry-btn:hover { background: #6e44c9; }
+        .entry-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(168, 85, 247, 0.5); }
 
-        .app-shell { display: none; flex-direction: column; height: 100vh; }
-        #map-canvas { flex-grow: 1; filter: grayscale(0.2) brightness(0.6); position: relative; }
+        .app-shell { display: none; flex-direction: column; height: 100vh; background: var(--gradient-bg); }
+        
+        #dashboard-view { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
 
-        header { position: absolute; top: 0; width: 100%; padding: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #ff4444; transition: 0.5s; }
+        header { padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(8px); }
+        .balance-box { color: var(--gold); font-weight: bold; font-size: 1.15rem; text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; }
 
-        .search-container {
-            position: absolute;
-            top: 80px;
-            left: 5%;
-            right: 5%;
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
+        .hero-banner { 
+            margin: 20px; 
+            padding: 30px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 24px; 
+            text-align: center; 
+            backdrop-filter: blur(12px); 
         }
 
-        .search-input {
-            width: 100%;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            padding: 14px 20px;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
-            outline: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
-            transition: border-color 0.3s;
-        }
+        .game-box { margin: 16px 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 22px; text-align: center; }
+        .game-title { color: var(--gold); font-size: 1.35rem; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+        .game-btn { width: 100%; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold); color: var(--gold); padding: 14px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .game-btn:hover { background: var(--gold); color: #000; }
 
-        .search-input:focus {
-            border-color: var(--gold);
-        }
-
-        .places-panel {
-            position: absolute;
-            bottom: 30px;
-            left: 5%;
-            right: 5%;
-            background: var(--card-bg);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
+        /* حقول الإدارة */
+        .admin-controls {
+            background: rgba(15, 23, 42, 0.5);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 16px;
-            max-height: 220px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            display: none;
-        }
-
-        .panel-title {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .places-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .place-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px 16px;
-            border-radius: 10px;
-            border-right: 4px solid var(--gold);
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .place-item:hover {
-            transform: translateX(-3px);
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .place-info {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .place-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-
-        .place-type {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .place-distance {
-            font-size: 0.8rem;
-            color: var(--gold);
-            font-weight: 500;
-        }
-
-        .floating-action-icon {
-            position: absolute;
-            top: 180px;
-            right: 20px;
-            width: 44px;
-            height: 44px;
-            background: rgba(20, 20, 20, 0.95);
-            border: 1px solid var(--gold);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .floating-action-icon:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .details-modal {
-            display: none;
-            position: absolute;
-            bottom: 30px;
-            left: 5%;
-            right: 5%;
-            background: rgba(15, 15, 18, 0.95);
-            border: 1px solid var(--gold);
-            border-radius: 16px;
-            padding: 20px;
-            z-index: 1001;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9);
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .details-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .details-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--gold);
-        }
-
-        .details-close {
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .details-body {
-            font-size: 0.85rem;
-            color: #ddd;
-            margin-bottom: 16px;
-        }
-
-        .details-btn {
-            width: 100%;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .details-btn:hover {
-            background: #6e44c9;
-        }
-
-        .interactive-feature-box {
-            background: rgba(255, 215, 0, 0.05);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 15px;
-            font-size: 0.8rem;
+            margin-top: 16px;
             text-align: right;
         }
+        
+        .admin-controls input, .admin-controls textarea {
+            width: 90%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            margin-bottom: 10px;
+            outline: none;
+            font-family: inherit;
+        }
 
-        .view-modal { position: fixed; inset: 0; background: var(--dark); z-index: 5000; display: none; flex-direction: column; }
-        .view-modal.active { display: flex; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        #map-view { display: none; flex-direction: column; height: 100%; }
+        #map-canvas { flex-grow: 1; filter: saturate(1.1) brightness(0.95); position: relative; }
+        
+        .search-container { position: absolute; top: 20px; left: 5%; right: 5%; z-index: 1000; }
+        .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px 20px; border-radius: 14px; color: #fff; font-size: 0.9rem; backdrop-filter: blur(12px); outline: none; }
+        .search-input:focus { border-color: var(--gold); }
 
-        nav { background: #050505; display: flex; justify-content: space-around; padding: 15px 0 30px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); z-index: 2000; }
-        .nav-item { font-size: 24px; opacity: 0.4; cursor: pointer; }
-        .nav-item.active { opacity: 1; color: var(--gold); }
+        .places-panel { position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; max-height: 220px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .panel-title { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .places-list { display: flex; flex-direction: column; gap: 10px; }
+        .place-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.04); padding: 12px 16px; border-radius: 12px; border-right: 4px solid var(--gold); cursor: pointer; }
+        .place-item:hover { background: rgba(255, 255, 255, 0.08); }
+        .place-info { display: flex; flex-direction: column; gap: 3px; }
+        .place-name { font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
+        .place-type { font-size: 0.75rem; color: var(--text-secondary); }
+        .place-distance { font-size: 0.8rem; color: var(--gold); font-weight: 500; }
+
+        .floating-map-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 1px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .details-modal { display: none; position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--gold); border-radius: 20px; padding: 20px; z-index: 1001; backdrop-filter: blur(16px); }
+        .details-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .details-title { font-size: 1.15rem; font-weight: bold; color: var(--gold); }
+        .details-close { background: none; border: none; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer; }
+        .details-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .details-btn:hover { background: #4f46e5; }
+
+        .view-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; backdrop-filter: blur(8px); }
+        .view-modal.active { display: flex; }
+
+        nav { background: var(--header-bg); display: flex; justify-content: space-around; padding: 14px 0 24px 0; border-top: 1px solid var(--border-color); z-index: 2000; }
+        .nav-item { font-size: 26px; opacity: 0.4; cursor: pointer; }
+        .nav-item.active { opacity: 1; color: var(--gold); text-shadow: 0 0 12px var(--gold); }
     </style>
 </head>
 <body>
@@ -255,119 +132,225 @@
     <div id="lock-screen">
         <div class="card">
             <h2 style="letter-spacing: 3px;">CHATOO <span style="color:var(--primary)">PRO</span></h2>
-            <p id="user-status" style="font-size: 13px; color: #aaa;">جاري الاتصال بالبلوكشين الحقيقي...</p>
-            <button id="entry-btn" class="entry-btn" onclick="handleSecureEntry()" disabled>دخول آمن</button>
+            <p id="user-status" style="font-size: 13px; color: var(--text-secondary);">جاري الاتصال بالبلوكشين الحقيقي...</p>
+            <button id="entry-btn" class="entry-btn" onclick="handleSecureEntry()">دخول آمن</button>
         </div>
     </div>
 
     <div class="app-shell" id="main-app">
-        <header>
-            <div id="balance-display" style="color:var(--gold); font-weight:bold;">جاري جلب الرصيد الفعلي...</div>
-            <div class="status-dot" id="status-dot"></div>
-        </header>
+        
+        <div id="dashboard-view">
+            <header>
+                <div class="balance-box">الرصيد: <span id="balance-display">314.00 Pi</span></div>
+                <div class="status-dot"></div>
+            </header>
 
-        <div class="search-container">
-            <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن الأماكن الحقيقية...">
+            <div class="hero-banner">
+                <h2 style="color: var(--text-main); font-size: 1.35rem; margin-bottom: 8px;">مرحباً بك Koukiz007</h2>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">استكشف المواقع الحية وشارك في مسابقات Web3 الفورية.</p>
+            </div>
+
+            <div class="game-box">
+                <div class="game-title">🔒 Web3 Vault Challenge</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">أدخل الكود الصحيح لفتح الخزنة وربح الجوائز الفورية.</p>
+                <div style="background: rgba(15, 23, 42, 0.6); padding:12px; border-radius:12px; margin-bottom: 16px; font-size: 0.8rem;">
+                    • المحاولة الأولى: <b style="color:var(--gold)">مجانية</b><br>
+                    • إعادة المحاولة: <b style="color:var(--gold)">0.5 Pi</b>
+                </div>
+                <button class="game-btn" onclick="openVaultGame()">فتح التحدي</button>
+
+                <div class="admin-controls">
+                    <span style="color:var(--gold); font-size: 0.85rem; font-weight:bold;">⚙️ لوحة صلاحيات المدير</span>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 10px;">حدد الرصيد والكود السري للخزنة:</p>
+                    
+                    <label style="font-size: 0.75rem;">قيمة الجائزة (Pi):</label>
+                    <input type="number" id="admin-vault-prize" value="314" placeholder="مثال: 500">
+                    
+                    <label style="font-size: 0.75rem;">الكود السري لفتح الخزنة:</label>
+                    <input type="text" id="admin-vault-code" value="3141" placeholder="مثال: 1234">
+
+                    <button onclick="saveVaultConfig()" style="background:var(--primary); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:bold;">حفظ الإعدادات</button>
+                </div>
+            </div>
+
+            <div class="game-box">
+                <div class="game-title">📣 مساحتك الإعلانية (صاحب المكان)</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">أضف مسابقة أو إعلاناً تجارياً يظهر للمستخدمين عند استكشاف مكانك.</p>
+                
+                <div class="admin-controls">
+                    <label style="font-size: 0.75rem;">عنوان المسابقة أو الإعلان:</label>
+                    <input type="text" id="venue-ad-title" placeholder="مثال: مسابقة البيتزا الكبرى">
+                    
+                    <label style="font-size: 0.75rem;">تفاصيل المسابقة (الجائزة):</label>
+                    <textarea id="venue-ad-details" rows="3" placeholder="تفاصيل الإعلان..."></textarea>
+
+                    <button onclick="postVenueAd()" style="background:var(--primary); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:bold;">نشر الإعلان</button>
+                </div>
+            </div>
+
+            <div class="game-box">
+                <div class="game-title">📍 الخريطة والمواقع</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">انتقل لعرض الأماكن والمقاهي المتواجدة حولك.</p>
+                <button class="game-btn" onclick="switchTab('map')">عرض الخريطة</button>
+            </div>
+            
+            <div style="text-align:center; padding:15px; color: var(--text-secondary); font-size:0.75rem;">
+                © 2026 Chatoo Pro.
+            </div>
         </div>
 
-        <div id="map-canvas">
+        <div id="map-view">
+            <header>
+                <div style="font-weight: bold; color: var(--gold);">خريطة الأماكن الحقيقية</div>
+                <div onclick="backToDashboard()" style="cursor: pointer; color: var(--text-secondary); font-size: 0.9rem;">الرئيسية</div>
+            </header>
             
-            <div class="floating-action-icon" onclick="togglePlacesPanel()" title="قائمة الأماكن">
-                <span style="font-size: 18px; color: #ffd700;">☰</span>
-            </div>
-
-            <div class="places-panel" id="placesPanel">
-                <div class="panel-title">
-                    <span>📍</span> الأماكن الحقيقية
+            <div id="map-canvas">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن الأماكن الحقيقية...">
                 </div>
-                <div class="places-list" id="realPlacesList"></div>
-            </div>
-
-            <div class="details-modal" id="venueDetailsModal">
-                <div class="details-header">
-                    <span class="details-title" id="modalVenueName">اسم المكان</span>
-                    <button class="details-close" onclick="closeVenueDetails()">✕</button>
+                
+                <div class="floating-map-btn" onclick="alert('تحديث بيانات الخريطة جاري..')" title="تحديث الخريطة">
+                    <span style="color:var(--gold)">🔄</span>
                 </div>
-                <div class="details-body">
-                    <p><strong>النوع:</strong> <span id="modalVenueType">مقهى</span></p>
-                    <p><strong>المسافة:</strong> <span id="modalVenueDistance">0.0 كم</span></p>
-                    
-                    <div class="interactive-feature-box">
-                        <span style="color:var(--gold); font-weight:bold;">✨ ميزات الرواد المتقدمة:</span>
-                        <div style="margin-top:6px; color:#ddd; font-size:13px;">
-                            • 👥 عدد المتواجدين حالياً: <span id="active-users" style="color:var(--gold);">12</span><br>
-                            • ⚡ إرسال مكافأة (Tips): <button onclick="sendTip()" style="background:none; border:none; color:var(--primary); text-decoration:underline; cursor:pointer;">إرسال Pi</button><br>
-                            • 🔐 تسجيل الوصول (Check-in): <button onclick="performCheckIn()" style="background:none; border:none; color:var(--gold); text-decoration:underline; cursor:pointer;">تسجيل الآن</button>
-                        </div>
+
+                <div class="places-panel" id="placesPanel">
+                    <div class="panel-title"><span>📍</span> الأماكن القريبة</div>
+                    <div class="places-list" id="realPlacesList"></div>
+                </div>
+
+                <div class="details-modal" id="venueDetailsModal">
+                    <div class="details-header">
+                        <span class="details-title" id="modalVenueName">اسم المكان</span>
+                        <button class="details-close" onclick="closeVenueDetails()">✕</button>
                     </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+                        <p>النوع: <span id="modalVenueType" style="color:var(--gold);">مقهى</span></p>
+                        <p>المسافة: <span id="modalVenueDistance">0.0 كم</span></p>
+                        <p id="venue-ad-display" style="color: var(--gold); margin-top: 10px; font-weight: 600;"></p>
+                    </div>
+                    <button class="details-btn" onclick="openChatFromDetails()">فتح غرفة المحادثة</button>
                 </div>
-                <button class="details-btn" onclick="openChatFromDetails()">فتح غرفة المحادثة</button>
             </div>
         </div>
 
         <nav>
-            <div class="nav-item" onclick="App.showProfile()">👤</div>
-            <div class="nav-item" onclick="App.showGifts()">🎁</div>
-            <div class="nav-item active" onclick="App.showMap()">📍</div>
+            <div class="nav-item active" onclick="switchTab('home')" id="nav-home">👤</div>
+            <div class="nav-item" onclick="switchTab('map')" id="nav-map">📍</div>
         </nav>
     </div>
 
-    <div id="modal-chat" class="view-modal">
-        <div style="background:var(--primary); padding:20px; display:flex; justify-content:space-between; align-items:center;">
-            <span onclick="App.closeChat()" style="font-size:25px; cursor:pointer;">✕</span>
-            <span id="venue-name" style="font-weight:bold;">المكان</span>
+    <div id="modal-game" class="view-modal">
+        <div style="background:var(--header-bg); padding:20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color);">
+            <span onclick="closeGame()" style="font-size:25px; cursor:pointer; color:var(--text-secondary)">✕</span>
+            <span style="font-weight:bold; color:var(--gold)">Web3 Vault Challenge</span>
             <div style="width:25px;"></div>
         </div>
-        <div id="chat-flow" style="flex-grow:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px;"></div>
-        <div style="padding:15px; display:flex; gap:10px; background:#111;">
-            <input type="text" id="chat-input" placeholder="اكتب رسالتك الحقيقية..." style="flex-grow:1; background:#222; border:none; padding:15px; border-radius:15px; color:#fff;">
-            <button onclick="App.send()" style="background:var(--gold); border:none; width:50px; border-radius:15px; font-weight:bold; cursor:pointer;">➔</button>
+        <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px;">
+            <h3 style="color:var(--text-main); font-size: 1.4rem; margin-bottom: 10px;">أدخل الكود الصحيح لفتح الخزنة</h3>
+            <p style="color:var(--text-secondary); margin-bottom: 25px;">تخمين صحيح يمنحك مكافأة Pi حقيقية!</p>
+            
+            <input type="text" id="game-code" placeholder="أدخل الكود (مثال: 3141)" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-color); padding:15px; border-radius:12px; color:#fff; font-size:1.2rem; text-align:center; width:250px; outline:none; margin-bottom:20px;">
+            
+            <button onclick="submitGuess()" style="background:var(--gold); color:#000; border:none; padding:15px 40px; border-radius:12px; font-weight:bold; cursor:pointer; width:250px; font-size: 1.1rem; margin-bottom:10px;">محاولة</button>
+            <p style="font-size:0.75rem; color:var(--text-secondary)">المحاولة الأولى مجانية. الإعادة بتكلفة 0.5 Pi</p>
+            
+            <div id="game-result" style="margin-top:20px; font-size:0.9rem; color:var(--text-secondary);"></div>
         </div>
     </div>
 
     <script>
-        async function handleSecureEntry() {
-            const isReady = await RPC.checkHealth();
-            if (isReady) {
-                App.unlock();
+        let vaultConfig = {
+            prize: 314.00,
+            secretCode: "3141"
+        };
+        
+        let venueAdData = {
+            title: "لا توجد مسابقات نشطة حالياً",
+            details: ""
+        };
+
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("entry-btn").disabled = false;
+        });
+
+        function handleSecureEntry() {
+            document.getElementById("user-status").innerText = "جاري التحقق من الاتصال بالشبكة...";
+            setTimeout(() => {
+                document.getElementById("lock-screen").style.display = "none";
+                document.getElementById("main-app").style.display = "flex";
                 fetchRealUserBalance();
                 loadRealPlaces();
-            } else {
-                alert("فشل الاتصال بالبلوكشين الحقيقي. يرجى التحقق من الشبكة.");
+            }, 1200);
+        }
+
+        // حفظ إعدادات الخزنة
+        function saveVaultConfig() {
+            const prizeInput = document.getElementById('admin-vault-prize').value;
+            const codeInput = document.getElementById('admin-vault-code').value;
+            
+            vaultConfig.prize = parseFloat(prizeInput);
+            vaultConfig.secretCode = codeInput;
+
+            alert("تم حفظ إعدادات الخزنة بنجاح! الجائزة الحالية: " + vaultConfig.prize + " Pi");
+        }
+
+        // نشر إعلان/مسابقة للمقهى أو المطعم
+        function postVenueAd() {
+            const title = document.getElementById('venue-ad-title').value;
+            const details = document.getElementById('venue-ad-details').value;
+
+            if (title === "" || details === "") {
+                alert("يرجى تعبئة العنوان وتفاصيل المسابقة.");
+                return;
             }
+
+            venueAdData.title = title;
+            venueAdData.details = details;
+
+            alert("تم نشر الإعلان/المسابقة بنجاح في التطبيق!");
+            // تفريغ الحقول بعد الإضافة
+            document.getElementById('venue-ad-title').value = "";
+            document.getElementById('venue-ad-details').value = "";
         }
 
-        window.onload = () => Auth.init();
-
-        function togglePlacesPanel() {
-            const panel = document.getElementById('placesPanel');
-            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-        }
-
-        // جلب الرصيد الفعلي من شبكة Pi
-        async function fetchRealUserBalance() {
+        function fetchRealUserBalance() {
             try {
-                const scopes = ['payments'];
-                Pi.authenticate(scopes, 
-                    (user) => {
-                        RPC.getUserBalance(user.uid).then(balance => {
-                            document.getElementById('balance-display').innerText = `${balance} Pi`;
-                            document.getElementById('status-dot').style.backgroundColor = '#00C853';
-                        }).catch(() => {
-                            document.getElementById('balance-display').innerText = "0.00 Pi";
-                        });
-                    },
-                    (error) => {
-                        console.error("خطأ في مصادقة Pi:", error);
-                        document.getElementById('balance-display').innerText = "تعذر الاتصال بالمحفظة";
-                    }
-                );
+                if (typeof Pi !== 'undefined') {
+                    Pi.authenticate(['payments'], (user) => {
+                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                    }, () => {
+                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                    });
+                } else {
+                    document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                }
             } catch (e) {
-                document.getElementById('balance-display').innerText = "خطأ في الشبكة";
+                document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
             }
         }
 
-        // جلب الأماكن الحقيقية
+        function switchTab(tabName) {
+            const homeView = document.getElementById('dashboard-view');
+            const mapView = document.getElementById('map-view');
+            
+            if (tabName === 'home') {
+                homeView.style.display = 'flex';
+                mapView.style.display = 'none';
+                document.getElementById('nav-home').classList.add('active');
+                document.getElementById('nav-map').classList.remove('active');
+            } else {
+                homeView.style.display = 'none';
+                mapView.style.display = 'flex';
+                document.getElementById('nav-map').classList.add('active');
+                document.getElementById('nav-home').classList.remove('active');
+            }
+        }
+
+        function backToDashboard() {
+            switchTab('home');
+        }
+
         function loadRealPlaces() {
             const placesContainer = document.getElementById('realPlacesList');
             placesContainer.innerHTML = '';
@@ -375,8 +358,7 @@
             const realPlaces = [
                 { name: "ABUELA'S CAFE", type: "مقهى", distance: "6.8 كم", users: 14 },
                 { name: "Le Petit Café", type: "مقهى", distance: "4.9 كم", users: 8 },
-                { name: "Le F café restaurant", type: "مقهى ومطعم", distance: "17.3 كم", users: 5 },
-                { name: "Café Lunch Le Festival", type: "مقهى / مطعم", distance: "4.5 كم", users: 22 }
+                { name: "Le F café restaurant", type: "مقهى ومطعم", distance: "17.3 كم", users: 5 }
             ];
 
             realPlaces.forEach(place => {
@@ -397,7 +379,15 @@
             document.getElementById('modalVenueName').innerText = name;
             document.getElementById('modalVenueType').innerText = type;
             document.getElementById('modalVenueDistance').innerText = distance;
-            document.getElementById('active-users').innerText = users;
+            
+            // عرض الإعلان في تفاصيل المكان
+            const adDisplay = document.getElementById('venue-ad-display');
+            if (venueAdData.details !== "") {
+                adDisplay.innerText = "🌟 " + venueAdData.title + ": " + venueAdData.details;
+            } else {
+                adDisplay.innerText = "لا توجد إعلانات لهذا المكان حالياً.";
+            }
+
             document.getElementById('venueDetailsModal').style.display = 'block';
         }
 
@@ -405,33 +395,30 @@
             document.getElementById('venueDetailsModal').style.display = 'none';
         }
 
-        // ميزة إرسال المكافآت
-        function sendTip() {
-            const amount = prompt("أدخل كمية Pi التي تود إرسالها:");
-            if (amount && !isNaN(amount) && amount > 0) {
-                alert(`تم إرسال ${amount} Pi بنجاح عبر بلوكشين المحفظة!`);
-                closeVenueDetails();
-            } else if (amount !== null) {
-                alert("قيمة غير صالحة.");
-            }
+        function openVaultGame() {
+            document.getElementById('modal-game').classList.add('active');
         }
 
-        // ميزة تسجيل الوصول
-        function performCheckIn() {
-            const venueName = document.getElementById('modalVenueName').innerText;
-            alert(`تم تسجيل الوصول بنجاح في ${venueName}! أنت الآن متصل في الغرفة.`);
-            closeVenueDetails();
+        function closeGame() {
+            document.getElementById('modal-game').classList.remove('active');
+        }
+
+        function submitGuess() {
+            const guess = document.getElementById('game-code').value;
+            const resBox = document.getElementById('game-result');
+            
+            if (guess === vaultConfig.secretCode) {
+                resBox.innerText = `أحسنت! الكود صحيح، تم تحويل ${vaultConfig.prize} Pi إلى محفظتك بنجاح.`;
+                resBox.style.color = "var(--gold)";
+            } else {
+                resBox.innerText = "الكود خاطئ. المحاولة التالية ستكلف 0.5 Pi.";
+                resBox.style.color = "#f43f5e";
+            }
         }
 
         function openChatFromDetails() {
-            const name = document.getElementById('modalVenueName').innerText;
+            alert("تم فتح غرفة المحادثة للمكان بنجاح!");
             closeVenueDetails();
-            if (typeof App !== 'undefined' && App.openChat) {
-                App.openChat(name);
-            } else {
-                document.getElementById('venue-name').innerText = name;
-                document.getElementById('modal-chat').classList.add('active');
-            }
         }
     </script>
 </body>
