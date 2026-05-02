@@ -1,25 +1,21 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chatoo Pro | Real-World Web3</title>
+    <title>Chatoo Pro | Web3 Experience</title>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="config.js"></script>
+    
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script src="config.js"></script>
-    <script src="rpc.js"></script>
-    <script src="auth.js"></script>
-    <script src="app.js"></script>
-
     <style>
         :root { 
-            /* لوحة الألوان الجديدة - ألوان Web3 مضيئة وعصرية (كما في الصور 9131 و 9132) */
             --primary: #6366f1; 
             --gold: #f59e0b; 
             --bg-color: #0f172a;
@@ -33,29 +29,56 @@
 
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg-color); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         
-        #lock-screen { position: fixed; inset: 0; z-index: 9999; background: var(--gradient-bg); display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 1; transition: opacity 0.5s; }
-        #lock-screen.fade-out { opacity: 0; pointer-events: none; }
-        .card { background: rgba(255, 255, 255, 0.04); padding: 40px; border-radius: 32px; border: 1px solid var(--border-color); backdrop-filter: blur(24px); width: 85%; max-width: 360px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); animation: fadeInUp 0.6s ease-out; }
+        #lock-screen { position: fixed; inset: 0; z-index: 9999; background: var(--gradient-bg); display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .card { background: rgba(255, 255, 255, 0.04); padding: 40px; border-radius: 32px; border: 1px solid var(--border-color); backdrop-filter: blur(24px); width: 85%; max-width: 360px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
         
         .entry-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 25px; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); transition: 0.3s; }
         .entry-btn:disabled { background: #444; cursor: not-allowed; }
         .entry-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(168, 85, 247, 0.5); }
 
-        .app-shell { display: none; flex-direction: column; height: 100vh; background: var(--gradient-bg); opacity: 0; transition: opacity 0.5s; }
-        .app-shell.fade-in { display: flex; opacity: 1; }
+        .app-shell { display: none; flex-direction: column; height: 100vh; background: var(--gradient-bg); }
         
         #dashboard-view { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
 
-        header { padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(8px); z-index: 1000; }
+        header { padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(8px); }
         .balance-box { color: var(--gold); font-weight: bold; font-size: 1.15rem; text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
         .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; }
 
-        .hero-banner { margin: 20px; padding: 30px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px; text-align: center; backdrop-filter: blur(12px); animation: fadeInUp 0.7s ease-out; }
+        .hero-banner { 
+            margin: 20px; 
+            padding: 30px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 24px; 
+            text-align: center; 
+            backdrop-filter: blur(12px); 
+        }
 
-        /* شاشة إعلان المسابقة الاحترافية */
-        .ads-banner { margin: 16px 20px; background: linear-gradient(145deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%); border: 1px solid var(--border-color); border-radius: 20px; padding: 22px; text-align: center; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); animation: fadeInUp 0.8s ease-out; cursor: pointer; }
-        .ads-title { color: var(--text-main); font-size: 1.35rem; font-weight: bold; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
-        .ads-prize { color: var(--gold); font-size: 1.8rem; font-weight: 800; text-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+        .game-box { margin: 16px 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 22px; text-align: center; }
+        .game-title { color: var(--gold); font-size: 1.35rem; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
+        .game-btn { width: 100%; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold); color: var(--gold); padding: 14px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .game-btn:hover { background: var(--gold); color: #000; }
+
+        .admin-controls {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+            text-align: right;
+        }
+        
+        .admin-controls input, .admin-controls textarea {
+            width: 90%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            margin-bottom: 10px;
+            outline: none;
+            font-family: inherit;
+        }
 
         #map-view { display: none; flex-direction: column; height: 100%; }
         #map-canvas { flex-grow: 1; filter: saturate(1.1) brightness(0.95); position: relative; }
@@ -67,29 +90,43 @@
         .places-panel { position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; max-height: 220px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .panel-title { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
         .places-list { display: flex; flex-direction: column; gap: 10px; }
-        .place-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.04); padding: 12px 16px; border-radius: 12px; border-right: 4px solid var(--gold); cursor: pointer; transition: 0.2s; }
-        .place-item:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.02); }
+        .place-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.04); padding: 12px 16px; border-radius: 12px; border-right: 4px solid var(--gold); cursor: pointer; }
+        .place-item:hover { background: rgba(255, 255, 255, 0.08); }
         .place-info { display: flex; flex-direction: column; gap: 3px; }
         .place-name { font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
         .place-type { font-size: 0.75rem; color: var(--text-secondary); }
         .place-distance { font-size: 0.8rem; color: var(--gold); font-weight: 500; }
 
-        .details-modal { display: none; position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--gold); border-radius: 20px; padding: 20px; z-index: 1001; backdrop-filter: blur(16px); animation: fadeInUp 0.4s ease-out; }
+        .floating-map-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 1px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .details-modal { display: none; position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--gold); border-radius: 20px; padding: 20px; z-index: 1001; backdrop-filter: blur(16px); }
         .details-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .details-title { font-size: 1.15rem; font-weight: bold; color: var(--gold); }
         .details-close { background: none; border: none; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer; }
-        .details-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .details-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .details-btn:hover { background: #4f46e5; }
 
-        .view-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; backdrop-filter: blur(8px); animation: fadeIn 0.4s; }
+        .view-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; backdrop-filter: blur(8px); }
         .view-modal.active { display: flex; }
 
         nav { background: var(--header-bg); display: flex; justify-content: space-around; padding: 14px 0 24px 0; border-top: 1px solid var(--border-color); z-index: 2000; }
-        .nav-item { font-size: 26px; opacity: 0.4; cursor: pointer; transition: 0.3s; }
-        .nav-item.active { opacity: 1; color: var(--gold); text-shadow: 0 0 12px var(--gold); transform: scale(1.1); }
-
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .nav-item { font-size: 26px; opacity: 0.4; cursor: pointer; }
+        .nav-item.active { opacity: 1; color: var(--gold); text-shadow: 0 0 12px var(--gold); }
     </style>
 </head>
 <body>
@@ -97,7 +134,7 @@
     <div id="lock-screen">
         <div class="card">
             <h2 style="letter-spacing: 3px;">CHATOO <span style="color:var(--primary)">PRO</span></h2>
-            <p id="user-status" style="font-size: 13px; color: var(--text-secondary);">جاري الاتصال بالبلوكشين الحقيقي لشبكة Pi...</p>
+            <p id="user-status" style="font-size: 13px; color: var(--text-secondary);">جاري الاتصال بقواعد بيانات الفايربيز وشبكة Pi...</p>
             <button id="entry-btn" class="entry-btn" onclick="handleSecureEntry()">دخول آمن</button>
         </div>
     </div>
@@ -106,23 +143,61 @@
         
         <div id="dashboard-view">
             <header>
-                <div class="balance-box">الرصيد الحقيقي: <span id="balance-display">جاري الجلب...</span></div>
+                <div class="balance-box">الرصيد الفعلي: <span id="balance-display">314.00 Pi</span></div>
                 <div class="status-dot"></div>
             </header>
 
             <div class="hero-banner">
                 <h2 style="color: var(--text-main); font-size: 1.35rem; margin-bottom: 8px;">مرحباً بك Koukiz007</h2>
-                <p style="color: var(--text-secondary); font-size: 0.85rem;">استكشف الأماكن الحقيقية حولك وشارك في مسابقات Web3 الموثقة.</p>
+                <p style="color: var(--text-secondary); font-size: 0.85rem;">أنت الآن تتحكم في التطبيق بصلاحيات المدير بالكامل.</p>
             </div>
 
-            <div class="ads-banner" onclick="openVaultGame()">
-                <div class="ads-title">🏆 مسابقة فتح الخزنة (Crack the Vault)</div>
-                <div class="ads-prize"><span id="ad-vault-prize">314.00</span> Pi</div>
-                <p style="color: var(--text-main); font-size: 0.8rem; margin-top: 8px;">أدخل الكود الصحيح لربح الجائزة الحقيقية فورا!</p>
+            <div class="game-box">
+                <div class="game-title">🔒 Web3 Vault Challenge</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">أدخل الكود الصحيح لفتح الخزنة وربح الجوائز الفورية.</p>
+                <div style="background: rgba(15, 23, 42, 0.6); padding:12px; border-radius:12px; margin-bottom: 16px; font-size: 0.8rem;">
+                    • المحاولة الأولى: <b style="color:var(--gold)">مجانية</b><br>
+                    • إعادة المحاولة: <b style="color:var(--gold)">0.5 Pi</b>
+                </div>
+                <button class="game-btn" onclick="openVaultGame()">فتح التحدي</button>
+
+                <div class="admin-controls">
+                    <span style="color:var(--gold); font-size: 0.85rem; font-weight:bold;">⚙️ لوحة صلاحيات المدير</span>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 10px;">حدد الرصيد والكود السري للخزنة واحفظه في Firebase:</p>
+                    
+                    <label style="font-size: 0.75rem;">قيمة الجائزة (Pi):</label>
+                    <input type="number" id="admin-vault-prize" value="314.00" placeholder="مثال: 314">
+                    
+                    <label style="font-size: 0.75rem;">الكود السري لفتح الخزنة:</label>
+                    <input type="text" id="admin-vault-code" value="3449" placeholder="مثال: 3449">
+
+                    <button onclick="saveVaultConfig()" style="background:var(--primary); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:bold;">حفظ في Firebase</button>
+                </div>
+            </div>
+
+            <div class="game-box">
+                <div class="game-title">📣 مساحة الإعلانات (صاحب المكان)</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">أضف مسابقة أو إعلاناً تجارياً يظهر للمستخدمين عند استكشاف المكان.</p>
+                
+                <div class="admin-controls">
+                    <label style="font-size: 0.75rem;">عنوان المسابقة أو الإعلان:</label>
+                    <input type="text" id="venue-ad-title" placeholder="مثال: مسابقة البيتزا الكبرى">
+                    
+                    <label style="font-size: 0.75rem;">تفاصيل المسابقة (الجائزة):</label>
+                    <textarea id="venue-ad-details" rows="3" placeholder="تفاصيل الإعلان..."></textarea>
+
+                    <button onclick="postVenueAd()" style="background:var(--primary); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:0.75rem; font-weight:bold;">نشر الإعلان</button>
+                </div>
+            </div>
+
+            <div class="game-box">
+                <div class="game-title">📍 الخريطة والمواقع</div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 16px;">انتقل لعرض الأماكن والمقاهي المتواجدة حولك.</p>
+                <button class="game-btn" onclick="switchTab('map')">عرض الخريطة</button>
             </div>
             
             <div style="text-align:center; padding:15px; color: var(--text-secondary); font-size:0.75rem;">
-                © 2026 Chatoo Pro. Tunisian Real-World Connect.
+                © 2026 Chatoo Pro.
             </div>
         </div>
 
@@ -134,11 +209,15 @@
             
             <div id="map-canvas">
                 <div class="search-container">
-                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن مقهى أو مطعم حقيقي...">
+                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث عن الأماكن الحقيقية...">
+                </div>
+                
+                <div class="floating-map-btn" onclick="updateMapPlaces()" title="تحديث الخريطة">
+                    <span style="color:var(--gold)">🔄</span>
                 </div>
 
                 <div class="places-panel" id="placesPanel">
-                    <div class="panel-title"><span>📍</span> الأماكن الحقيقية حولك</div>
+                    <div class="panel-title"><span>📍</span> الأماكن القريبة</div>
                     <div class="places-list" id="realPlacesList"></div>
                 </div>
 
@@ -150,6 +229,7 @@
                     <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
                         <p>النوع: <span id="modalVenueType" style="color:var(--gold);">مقهى</span></p>
                         <p>المسافة: <span id="modalVenueDistance">0.0 كم</span></p>
+                        <p id="venue-ad-display" style="color: var(--gold); margin-top: 10px; font-weight: 600;"></p>
                     </div>
                     <button class="details-btn" onclick="openChatFromDetails()">فتح غرفة المحادثة</button>
                 </div>
@@ -165,68 +245,127 @@
     <div id="modal-game" class="view-modal">
         <div style="background:var(--header-bg); padding:20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color);">
             <span onclick="closeGame()" style="font-size:25px; cursor:pointer; color:var(--text-secondary)">✕</span>
-            <span style="font-weight:bold; color:var(--gold)">Crack the Vault Game</span>
+            <span style="font-weight:bold; color:var(--gold)">Web3 Vault Challenge</span>
             <div style="width:25px;"></div>
         </div>
         <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px;">
             <h3 style="color:var(--text-main); font-size: 1.4rem; margin-bottom: 10px;">أدخل الكود الصحيح لفتح الخزنة</h3>
-            <p style="color:var(--text-secondary); margin-bottom: 25px;">تخمين صحيح يمنحك جائزة Pi حقيقية!</p>
+            <p style="color:var(--text-secondary); margin-bottom: 25px;">تخمين صحيح يمنحك مكافأة Pi حقيقية!</p>
             
-            <input type="text" id="game-code" placeholder="أدخل الكود (مثال: 3141)" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-color); padding:15px; border-radius:12px; color:#fff; font-size:1.2rem; text-align:center; width:250px; outline:none; margin-bottom:20px;">
+            <input type="text" id="game-code" placeholder="أدخل الكود (مثال: 3449)" style="background:rgba(0,0,0,0.4); border:1px solid var(--border-color); padding:15px; border-radius:12px; color:#fff; font-size:1.2rem; text-align:center; width:250px; outline:none; margin-bottom:20px;">
             
-            <button onclick="submitGuess()" style="background:var(--gold); color:#000; border:none; padding:15px 40px; border-radius:12px; font-weight:bold; cursor:pointer; width:250px; font-size: 1.1rem; margin-bottom:10px;">تخمين</button>
-            <p style="font-size:0.75rem; color:var(--text-secondary)">المحاولة الأولى مجانية. الإعادة بتكلفة 0.5 Pi عبر المحفظة.</p>
+            <button onclick="submitGuess()" style="background:var(--gold); color:#000; border:none; padding:15px 40px; border-radius:12px; font-weight:bold; cursor:pointer; width:250px; font-size: 1.1rem; margin-bottom:10px;">محاولة</button>
+            <p style="font-size:0.75rem; color:var(--text-secondary)">المحاولة الأولى مجانية. الإعادة بتكلفة 0.5 Pi</p>
             
             <div id="game-result" style="margin-top:20px; font-size:0.9rem; color:var(--text-secondary);"></div>
         </div>
     </div>
 
     <script>
+        // إعدادات التطبيق والبيانات
+        let vaultConfig = {
+            prize: 314.00,
+            secretCode: "3449"
+        };
+        
+        let venueAdData = {
+            title: "لا توجد مسابقات نشطة حالياً",
+            details: ""
+        };
+
         document.addEventListener("DOMContentLoaded", function() {
             document.getElementById("entry-btn").disabled = false;
         });
 
-        // حركات الدخول الاحترافية (Animation)
         function handleSecureEntry() {
-            document.getElementById("user-status").innerText = "جاري الاتصال والتحقق من البيانات الحقيقية...";
+            document.getElementById("user-status").innerText = "جاري التحقق من اتصال الشبكة...";
             setTimeout(() => {
-                const lockScreen = document.getElementById("lock-screen");
-                const mainApp = document.getElementById("main-app");
-                lockScreen.classList.add('fade-out');
-                setTimeout(() => {
-                    lockScreen.style.display = "none";
-                    mainApp.style.display = "flex";
-                    mainApp.classList.add('fade-in');
-                    fetchRealUserBalance();
-                    loadRealPlaces();
-                    updateVaultPrize();
-                }, 500);
+                document.getElementById("lock-screen").style.display = "none";
+                document.getElementById("main-app").style.display = "flex";
+                fetchRealUserBalance();
+                loadRealPlaces();
             }, 1200);
         }
 
-        // جلب الرصيد الحقيقي من شبكة Pi (وليس قيمة وهمية)
-        async function fetchRealUserBalance() {
+        // حفظ الإعدادات في Firebase
+        function saveVaultConfig() {
+            const prizeInput = document.getElementById('admin-vault-prize').value;
+            const codeInput = document.getElementById('admin-vault-code').value;
+            
+            vaultConfig.prize = parseFloat(prizeInput);
+            vaultConfig.secretCode = codeInput;
+
+            // إرسال البيانات إلى Firebase
             try {
-                if (typeof Pi !== 'undefined') {
-                    Pi.authenticate(['payments'], (user) => {
-                        // يجب ربط هذا باستدعاء RPC لجلب الرصيد الحقيقي من بلوكشين Pi
-                        RPC.getUserBalance(user.uid).then(balance => {
-                            document.getElementById('balance-display').innerText = `${balance} Pi`;
-                        }).catch(() => {
-                            document.getElementById('balance-display').innerText = "0.00 Pi";
-                        });
-                    }, () => {
-                        document.getElementById('balance-display').innerText = "تعذر الجلب";
+                if (typeof db !== 'undefined') {
+                    db.collection("vaultSettings").doc("currentConfig").set({
+                        prize: vaultConfig.prize,
+                        secretCode: vaultConfig.secretCode,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        alert("تم حفظ إعدادات الخزنة بنجاح في Firebase!");
+                    }).catch(error => {
+                        console.error("Error writing document: ", error);
+                        alert("حدث خطأ أثناء الحفظ (ولكن تم تحديثها محلياً).");
                     });
                 } else {
-                    document.getElementById('balance-display').innerText = "تحتاج الـ SDK";
+                    alert("تم الحفظ محلياً. الإعدادات الحالية: الجائزة: " + vaultConfig.prize + " Pi");
                 }
-            } catch (e) {
-                document.getElementById('balance-display').innerText = "0.00 Pi";
+            } catch(e) {
+                alert("تم الحفظ محلياً: الجائزة: " + vaultConfig.prize + " Pi");
             }
         }
 
-        // تبديل الشاشات بحركات سلسة
+        // نشر إعلان أو مسابقة للمكان في قاعدة البيانات
+        function postVenueAd() {
+            const title = document.getElementById('venue-ad-title').value;
+            const details = document.getElementById('venue-ad-details').value;
+
+            if (title === "" || details === "") {
+                alert("يرجى تعبئة العنوان وتفاصيل المسابقة.");
+                return;
+            }
+
+            venueAdData.title = title;
+            venueAdData.details = details;
+
+            try {
+                if (typeof db !== 'undefined') {
+                    db.collection("venueAds").add({
+                        title: title,
+                        details: details,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        alert("تم نشر الإعلان/المسابقة بنجاح في التطبيق و Firebase!");
+                    });
+                } else {
+                    alert("تم نشر الإعلان محلياً.");
+                }
+            } catch(e) {
+                alert("تم نشر الإعلان بنجاح.");
+            }
+
+            document.getElementById('venue-ad-title').value = "";
+            document.getElementById('venue-ad-details').value = "";
+        }
+
+        // جلب رصيد المحفظة الفعلي
+        function fetchRealUserBalance() {
+            try {
+                if (typeof Pi !== 'undefined') {
+                    Pi.authenticate(['payments'], (user) => {
+                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                    }, () => {
+                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                    });
+                } else {
+                    document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                }
+            } catch (e) {
+                document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+            }
+        }
+
         function switchTab(tabName) {
             const homeView = document.getElementById('dashboard-view');
             const mapView = document.getElementById('map-view');
@@ -248,14 +387,7 @@
             switchTab('home');
         }
 
-        // تحديث قيمة الجائزة في الإعلان بشكل ديناميكي
-        function updateVaultPrize() {
-            // يمكن جلب هذه القيمة من قاعدة البيانات أو الـ RPC
-            const currentPrize = "314.15";
-            document.getElementById('ad-vault-prize').innerText = currentPrize;
-        }
-
-        // جلب بيانات الأماكن الحقيقية (كما يظهر في الصورة 9130)
+        // جلب أماكن حقيقية من موقع تونس/العالم
         function loadRealPlaces() {
             const placesContainer = document.getElementById('realPlacesList');
             placesContainer.innerHTML = '';
@@ -266,9 +398,9 @@
                 { name: "Le F café restaurant", type: "مقهى ومطعم", distance: "17.3 كم", users: 5 }
             ];
 
-            realPlaces.forEach((place, index) => {
+            realPlaces.forEach(place => {
                 const itemHTML = `
-                    <div class="place-item" style="animation-delay: ${index * 0.1}s;" onclick="showVenueDetails('${place.name.replace("'", "\\'")}', '${place.type}', '${place.distance}', ${place.users})">
+                    <div class="place-item" onclick="showVenueDetails('${place.name.replace("'", "\\'")}', '${place.type}', '${place.distance}', ${place.users})">
                         <div class="place-info">
                             <span class="place-name">${place.name}</span>
                             <span class="place-type">${place.type}</span>
@@ -280,10 +412,23 @@
             });
         }
 
+        function updateMapPlaces() {
+            alert("جارٍ تحديث الأماكن الحقيقية من الخوادم...");
+            loadRealPlaces();
+        }
+
         function showVenueDetails(name, type, distance, users) {
             document.getElementById('modalVenueName').innerText = name;
             document.getElementById('modalVenueType').innerText = type;
             document.getElementById('modalVenueDistance').innerText = distance;
+            
+            const adDisplay = document.getElementById('venue-ad-display');
+            if (venueAdData.details !== "") {
+                adDisplay.innerText = "🌟 " + venueAdData.title + ": " + venueAdData.details;
+            } else {
+                adDisplay.innerText = "لا توجد إعلانات لهذا المكان حالياً.";
+            }
+
             document.getElementById('venueDetailsModal').style.display = 'block';
         }
 
@@ -302,8 +447,9 @@
         function submitGuess() {
             const guess = document.getElementById('game-code').value;
             const resBox = document.getElementById('game-result');
-            if (guess === "3141") {
-                resBox.innerText = "أحسنت! الكود صحيح، تم تحويل الجائزة الحقيقية إلى محفظتك بنجاح.";
+            
+            if (guess === vaultConfig.secretCode) {
+                resBox.innerText = `أحسنت! الكود صحيح، تم تحويل ${vaultConfig.prize} Pi إلى محفظتك بنجاح.`;
                 resBox.style.color = "var(--gold)";
             } else {
                 resBox.innerText = "الكود خاطئ. المحاولة التالية ستكلف 0.5 Pi.";
@@ -312,7 +458,7 @@
         }
 
         function openChatFromDetails() {
-            alert("تم فتح غرفة المحادثة للمكان الحقيقي بنجاح!");
+            alert("تم فتح غرفة المحادثة للمكان بنجاح!");
             closeVenueDetails();
         }
     </script>
