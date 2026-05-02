@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Chatoo Pro | Web3 Experience</title>
+    <title>Chatoo Pro | Cinematic Experience</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -27,22 +27,122 @@
             --header-bg: rgba(15, 23, 42, 0.8);
         }
 
-        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg-color); color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
-        
-        #lock-screen { position: fixed; inset: 0; z-index: 9999; background: var(--gradient-bg); display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .card { background: rgba(255, 255, 255, 0.04); padding: 40px; border-radius: 32px; border: 1px solid var(--border-color); backdrop-filter: blur(24px); width: 85%; max-width: 360px; text-align: center; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
-        
-        .entry-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 25px; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); transition: 0.3s; }
-        .entry-btn:disabled { background: #444; cursor: not-allowed; }
-        .entry-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(168, 85, 247, 0.5); }
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100vh; 
+            background: var(--bg-color); 
+            color: #fff; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden; 
+        }
 
-        .app-shell { display: none; flex-direction: column; height: 100vh; background: var(--gradient-bg); }
-        
-        #dashboard-view { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-        header { padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: var(--header-bg); border-bottom: 1px solid var(--border-color); backdrop-filter: blur(8px); }
-        .balance-box { color: var(--gold); font-weight: bold; font-size: 1.15rem; text-shadow: 0 0 12px rgba(245, 158, 11, 0.5); }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; }
+        @keyframes floatEffect {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.7); }
+        }
+        
+        #lock-screen { 
+            position: fixed; 
+            inset: 0; 
+            z-index: 9999; 
+            background: var(--gradient-bg); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            transition: opacity 0.6s ease;
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.04); 
+            padding: 40px; 
+            border-radius: 32px; 
+            border: 1px solid var(--border-color); 
+            backdrop-filter: blur(24px); 
+            width: 85%; 
+            max-width: 360px; 
+            text-align: center; 
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.8s ease-out, floatEffect 4s ease-in-out infinite;
+        }
+        
+        .entry-btn { 
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); 
+            color: white; 
+            border: none; 
+            padding: 18px; 
+            border-radius: 16px; 
+            font-weight: bold; 
+            width: 100%; 
+            cursor: pointer; 
+            margin-top: 25px; 
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        
+        .entry-btn:disabled { 
+            background: #444; 
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+        
+        .entry-btn:hover:not(:disabled) { 
+            transform: translateY(-4px) scale(1.02); 
+            box-shadow: 0 16px 35px rgba(168, 85, 247, 0.6); 
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        .app-shell { 
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            background: var(--gradient-bg); 
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        #dashboard-view { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            overflow-y: auto; 
+        }
+
+        header { 
+            padding: 18px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--header-bg); 
+            border-bottom: 1px solid var(--border-color); 
+            backdrop-filter: blur(8px); 
+        }
+
+        .balance-box { 
+            color: var(--gold); 
+            font-weight: bold; 
+            font-size: 1.15rem; 
+            text-shadow: 0 0 12px rgba(245, 158, 11, 0.6); 
+        }
+
+        .status-dot { 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            background: #22c55e; 
+            box-shadow: 0 0 12px #22c55e; 
+            animation: pulseGlow 2s infinite;
+        }
 
         .hero-banner { 
             margin: 20px; 
@@ -52,12 +152,56 @@
             border-radius: 24px; 
             text-align: center; 
             backdrop-filter: blur(12px); 
+            transition: transform 0.3s ease;
+        }
+        
+        .hero-banner:hover {
+            transform: scale(1.01);
+            border-color: rgba(99, 102, 241, 0.6);
         }
 
-        .game-box { margin: 16px 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 22px; text-align: center; }
-        .game-title { color: var(--gold); font-size: 1.35rem; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; }
-        .game-btn { width: 100%; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold); color: var(--gold); padding: 14px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .game-btn:hover { background: var(--gold); color: #000; }
+        .game-box { 
+            margin: 16px 20px; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 20px; 
+            padding: 22px; 
+            text-align: center; 
+            transition: all 0.3s ease;
+        }
+
+        .game-box:hover {
+            border-color: var(--gold);
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15);
+        }
+
+        .game-title { 
+            color: var(--gold); 
+            font-size: 1.35rem; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            text-transform: uppercase; 
+        }
+
+        .game-btn { 
+            width: 100%; 
+            background: rgba(245, 158, 11, 0.15); 
+            border: 1px solid var(--gold); 
+            color: var(--gold); 
+            padding: 14px; 
+            border-radius: 12px; 
+            margin-top: 10px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+
+        .game-btn:hover { 
+            background: var(--gold); 
+            color: #000; 
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
 
         .admin-controls {
             background: rgba(15, 23, 42, 0.5);
@@ -66,6 +210,11 @@
             padding: 16px;
             margin-top: 16px;
             text-align: right;
+            transition: all 0.3s ease;
+        }
+
+        .admin-controls:hover {
+            border-color: var(--primary);
         }
         
         .admin-controls input, .admin-controls textarea {
@@ -78,24 +227,122 @@
             margin-bottom: 10px;
             outline: none;
             font-family: inherit;
+            transition: border 0.3s ease;
         }
 
-        #map-view { display: none; flex-direction: column; height: 100%; }
-        #map-canvas { flex-grow: 1; filter: saturate(1.1) brightness(0.95); position: relative; }
-        
-        .search-container { position: absolute; top: 20px; left: 5%; right: 5%; z-index: 1000; }
-        .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px 20px; border-radius: 14px; color: #fff; font-size: 0.9rem; backdrop-filter: blur(12px); outline: none; }
-        .search-input:focus { border-color: var(--gold); }
+        .admin-controls input:focus, .admin-controls textarea:focus {
+            border-color: var(--gold);
+        }
 
-        .places-panel { position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; max-height: 220px; overflow-y: auto; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .panel-title { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .places-list { display: flex; flex-direction: column; gap: 10px; }
-        .place-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.04); padding: 12px 16px; border-radius: 12px; border-right: 4px solid var(--gold); cursor: pointer; }
-        .place-item:hover { background: rgba(255, 255, 255, 0.08); }
-        .place-info { display: flex; flex-direction: column; gap: 3px; }
-        .place-name { font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
-        .place-type { font-size: 0.75rem; color: var(--text-secondary); }
-        .place-distance { font-size: 0.8rem; color: var(--gold); font-weight: 500; }
+        #map-view { 
+            display: none; 
+            flex-direction: column; 
+            height: 100%; 
+            animation: fadeIn 0.5s ease-out; 
+        }
+
+        #map-canvas { 
+            flex-grow: 1; 
+            filter: saturate(1.1) brightness(0.95); 
+            position: relative; 
+        }
+        
+        .search-container { 
+            position: absolute; 
+            top: 20px; 
+            left: 5%; 
+            right: 5%; 
+            z-index: 1000; 
+        }
+        
+        .search-input { 
+            width: 100%; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            padding: 14px 20px; 
+            border-radius: 14px; 
+            color: #fff; 
+            font-size: 0.9rem; 
+            backdrop-filter: blur(12px); 
+            outline: none;
+            transition: border 0.3s ease;
+        }
+        
+        .search-input:focus { 
+            border-color: var(--gold); 
+        }
+
+        .places-panel { 
+            position: absolute; 
+            bottom: 30px; 
+            left: 5%; 
+            right: 5%; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            padding: 16px; 
+            max-height: 220px; 
+            overflow-y: auto; 
+            z-index: 1000; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            backdrop-filter: blur(16px);
+        }
+
+        .panel-title { 
+            font-size: 0.85rem; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            margin-bottom: 12px; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+
+        .places-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+
+        .place-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: rgba(255, 255, 255, 0.04); 
+            padding: 12px 16px; 
+            border-radius: 12px; 
+            border-right: 4px solid var(--gold); 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+
+        .place-item:hover { 
+            background: rgba(255, 255, 255, 0.08); 
+            transform: translateX(-4px); 
+        }
+
+        .place-info { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 3px; 
+        }
+
+        .place-name { 
+            font-weight: 600; 
+            font-size: 0.9rem; 
+            color: var(--text-main); 
+        }
+
+        .place-type { 
+            font-size: 0.75rem; 
+            color: var(--text-secondary); 
+        }
+
+        .place-distance { 
+            font-size: 0.8rem; 
+            color: var(--gold); 
+            font-weight: 500; 
+        }
 
         .floating-map-btn {
             position: absolute;
@@ -112,21 +359,108 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+        
+        .floating-map-btn:hover {
+            transform: rotate(180deg);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
         }
 
-        .details-modal { display: none; position: absolute; bottom: 30px; left: 5%; right: 5%; background: var(--card-bg); border: 1px solid var(--gold); border-radius: 20px; padding: 20px; z-index: 1001; backdrop-filter: blur(16px); }
-        .details-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .details-title { font-size: 1.15rem; font-weight: bold; color: var(--gold); }
-        .details-close { background: none; border: none; color: var(--text-secondary); font-size: 1.3rem; cursor: pointer; }
-        .details-btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: bold; cursor: pointer; }
-        .details-btn:hover { background: #4f46e5; }
+        .details-modal { 
+            display: none; 
+            position: absolute; 
+            bottom: 30px; 
+            left: 5%; 
+            right: 5%; 
+            background: var(--card-bg); 
+            border: 1px solid var(--gold); 
+            border-radius: 20px; 
+            padding: 20px; 
+            z-index: 1001; 
+            backdrop-filter: blur(16px); 
+            animation: fadeIn 0.4s ease-out;
+        }
 
-        .view-modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); z-index: 5000; display: none; flex-direction: column; backdrop-filter: blur(8px); }
+        .details-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 12px; 
+        }
+
+        .details-title { 
+            font-size: 1.15rem; 
+            font-weight: bold; 
+            color: var(--gold); 
+        }
+
+        .details-close { 
+            background: none; 
+            border: none; 
+            color: var(--text-secondary); 
+            font-size: 1.3rem; 
+            cursor: pointer; 
+            transition: transform 0.2s;
+        }
+
+        .details-close:hover {
+            transform: scale(1.2);
+            color: #f43f5e;
+        }
+
+        .details-btn { 
+            width: 100%; 
+            background: var(--primary); 
+            color: #fff; 
+            border: none; 
+            padding: 14px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+
+        .details-btn:hover { 
+            background: #4f46e5; 
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); 
+        }
+
+        .view-modal { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(15, 23, 42, 0.95); 
+            z-index: 5000; 
+            display: none; 
+            flex-direction: column; 
+            backdrop-filter: blur(8px); 
+            animation: fadeIn 0.3s ease-out;
+        }
+        
         .view-modal.active { display: flex; }
 
-        nav { background: var(--header-bg); display: flex; justify-content: space-around; padding: 14px 0 24px 0; border-top: 1px solid var(--border-color); z-index: 2000; }
-        .nav-item { font-size: 26px; opacity: 0.4; cursor: pointer; }
-        .nav-item.active { opacity: 1; color: var(--gold); text-shadow: 0 0 12px var(--gold); }
+        nav { 
+            background: var(--header-bg); 
+            display: flex; 
+            justify-content: space-around; 
+            padding: 14px 0 24px 0; 
+            border-top: 1px solid var(--border-color); 
+            z-index: 2000; 
+        }
+        
+        .nav-item { 
+            font-size: 26px; 
+            opacity: 0.4; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+        }
+        
+        .nav-item.active { 
+            opacity: 1; 
+            color: var(--gold); 
+            text-shadow: 0 0 15px var(--gold); 
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -143,7 +477,7 @@
         
         <div id="dashboard-view">
             <header>
-                <div class="balance-box">الرصيد الفعلي: <span id="balance-display">314.00 Pi</span></div>
+                <div class="balance-box">الرصيد الفعلي: <span id="balance-display">Pi 314.00</span></div>
                 <div class="status-dot"></div>
             </header>
 
@@ -262,7 +596,6 @@
     </div>
 
     <script>
-        // إعدادات التطبيق والبيانات
         let vaultConfig = {
             prize: 314.00,
             secretCode: "3449"
@@ -280,14 +613,16 @@
         function handleSecureEntry() {
             document.getElementById("user-status").innerText = "جاري التحقق من اتصال الشبكة...";
             setTimeout(() => {
-                document.getElementById("lock-screen").style.display = "none";
-                document.getElementById("main-app").style.display = "flex";
+                document.getElementById("lock-screen").style.opacity = "0";
+                setTimeout(() => {
+                    document.getElementById("lock-screen").style.display = "none";
+                    document.getElementById("main-app").style.display = "flex";
+                }, 600);
                 fetchRealUserBalance();
                 loadRealPlaces();
             }, 1200);
         }
 
-        // حفظ الإعدادات في Firebase
         function saveVaultConfig() {
             const prizeInput = document.getElementById('admin-vault-prize').value;
             const codeInput = document.getElementById('admin-vault-code').value;
@@ -295,7 +630,6 @@
             vaultConfig.prize = parseFloat(prizeInput);
             vaultConfig.secretCode = codeInput;
 
-            // إرسال البيانات إلى Firebase
             try {
                 if (typeof db !== 'undefined') {
                     db.collection("vaultSettings").doc("currentConfig").set({
@@ -316,7 +650,6 @@
             }
         }
 
-        // نشر إعلان أو مسابقة للمكان في قاعدة البيانات
         function postVenueAd() {
             const title = document.getElementById('venue-ad-title').value;
             const details = document.getElementById('venue-ad-details').value;
@@ -349,20 +682,19 @@
             document.getElementById('venue-ad-details').value = "";
         }
 
-        // جلب رصيد المحفظة الفعلي
         function fetchRealUserBalance() {
             try {
                 if (typeof Pi !== 'undefined') {
                     Pi.authenticate(['payments'], (user) => {
-                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                        document.getElementById('balance-display').innerText = `Pi ${vaultConfig.prize}`;
                     }, () => {
-                        document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                        document.getElementById('balance-display').innerText = `Pi ${vaultConfig.prize}`;
                     });
                 } else {
-                    document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                    document.getElementById('balance-display').innerText = `Pi ${vaultConfig.prize}`;
                 }
             } catch (e) {
-                document.getElementById('balance-display').innerText = `${vaultConfig.prize} Pi`;
+                document.getElementById('balance-display').innerText = `Pi ${vaultConfig.prize}`;
             }
         }
 
@@ -387,7 +719,6 @@
             switchTab('home');
         }
 
-        // جلب أماكن حقيقية من موقع تونس/العالم
         function loadRealPlaces() {
             const placesContainer = document.getElementById('realPlacesList');
             placesContainer.innerHTML = '';
@@ -449,7 +780,7 @@
             const resBox = document.getElementById('game-result');
             
             if (guess === vaultConfig.secretCode) {
-                resBox.innerText = `أحسنت! الكود صحيح، تم تحويل ${vaultConfig.prize} Pi إلى محفظتك بنجاح.`;
+                resBox.innerText = `أحسنت! الكود صحيح، تم تحويل Pi ${vaultConfig.prize} إلى محفظتك بنجاح.`;
                 resBox.style.color = "var(--gold)";
             } else {
                 resBox.innerText = "الكود خاطئ. المحاولة التالية ستكلف 0.5 Pi.";
